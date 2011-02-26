@@ -1,6 +1,12 @@
-debug = Environment(CCFLAGS='-Wall -g')
-release = Environment(CCFLAGS='-Wall')
+env     = Environment()
+debug   = env.Clone(CCFLAGS='-Wall -g')
+release = env.Clone(CCFLAGS='-Wall')
 
-debug.Program(target='matrixvm',
-              source='main.cpp'
-             )
+env = debug
+Export('env')
+debug.SConscript(
+    'SConscript',
+    variant_dir='build',
+    exports=['env'],
+    duplicate=0
+)

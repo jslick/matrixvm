@@ -5,9 +5,14 @@
  * Matrix VM
  */
 
+#include <stdexcept>
 #include <getopt.h>
 #include <cstring>
 #include <iostream>
+#include <fstream>
+#include "rapidxml/rapidxml.hpp"
+
+#include "motherboard.h"
 
 using namespace std;
 
@@ -16,20 +21,35 @@ void displayUsage(char* progName);
 /**
  * Parse command line arguments
  *
- * @param[in]  argc
- * @param[in]  argv
- * @param[out] bios  Filename of Motherboard BIOS to use
+ * @param[in]   argc
+ * @param[in]   argv
+ * @param[out]  bios  Filename of Motherboard BIOS to use
  * @return  True if program should continue; otherwise false
  */
 bool parseArgs(int argc, char** argv, string& bios);
+
+/**
+ * Read a file
+ * @param[in]   filename
+ * @param[out]  contents
+ */
+void readFile(const string& filename, string& contents);
+
+/**
+ * Read BIOS XML and load it into the Motherboard
+ * @param[in]       bios_file   XML BIOS file to load
+ * @param[in,out]   mb          Motherboard to load BIOS into
+ */
+void loadBios(const string& bios_file, Motherboard& mb);
 
 int main(int argc, char** argv)
 {
     string bios;
     if (!parseArgs(argc, argv, bios))
-    {
         return 0;
-    }
+
+    Motherboard mb;
+    loadBios(bios, mb);
 
     return 0;
 }
@@ -81,4 +101,51 @@ bool parseArgs(int argc, char** argv, string& bios)
         displayUsage(argv[0]);
         return false;
     }
+}
+
+void readFile(const string& filename, string& contents)
+{
+    ifstream in(filename.c_str());
+
+    if (!in.is_open())
+        throw runtime_error("Could not read BIOS file");
+
+    while (in.good())
+    {
+        string line;
+        getline(in, line);
+        contents += line;
+    }
+
+    in.close();
+}
+
+void loadBios(const string& bios_file, Motherboard& mb)
+{
+    using namespace rapidxml;
+
+    string contents;
+    readFile(bios_file, contents);
+
+    /* parse BIOS */
+    xml_document<> doc;
+    char* contentsBuf = new char[contents.length() + 1];    // deleted @ bottom
+    contents.copy(contentsBuf, contents.length() + 1);
+    doc.parse<0>(contentsBuf);
+
+    /* load BIOS */
+    xml_node<>* mbNode = doc.first_node();
+
+    // memory
+    xml_node<>* memNode = mbNode->first_node("memory");
+    if (memNode)
+    {
+        xml_attribute<>* attrSize = memNode->first_attribute("size");
+        if (attrSize)
+            mb.setMemorySize(atoi(attrSize->value()));
+    }
+    if (mb.getMemorySize() <= 0)
+        cout << "Warning:  Motherboard memory is not set" << endl;
+
+    delete[] contentsBuf;
 }

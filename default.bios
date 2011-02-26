@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<motherboard>
+   <memory size="1024" />
+   <cpu load="basic.cpu" count="1" master="0" />
+   <writable name="disk0" size="1024" filename="mydisk.writable" />
+</motherboard>

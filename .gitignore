@@ -1,4 +1,4 @@
 .sconsign.dblite
-*.o
-matrixvm
+build
 doc
+tmp
