@@ -7,6 +7,8 @@
 
 #include "motherboard.h"
 
+using namespace motherboard;
+
 Motherboard::Motherboard()
 : memorySize(0)
 { }

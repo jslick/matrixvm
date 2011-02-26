@@ -15,6 +15,7 @@
 #include "motherboard.h"
 
 using namespace std;
+using namespace motherboard;
 
 void displayUsage(char* progName);
 

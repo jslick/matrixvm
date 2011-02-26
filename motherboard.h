@@ -8,6 +8,9 @@
 #ifndef MOTHERBOARD_H
 #define MOTHERBOARD_H
 
+namespace motherboard
+{
+
 typedef int MemSize;
 
 /**
@@ -39,5 +42,7 @@ private:
 
     MemSize memorySize;
 };
+
+}   // namespace motherboard
 
 #endif // MOTHERBOARD_H
