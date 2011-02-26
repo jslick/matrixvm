@@ -132,6 +132,7 @@ void loadBios(const string& bios_file, Motherboard& mb)
     xml_document<> doc;
     char* contentsBuf = new char[contents.length() + 1];    // deleted @ bottom
     contents.copy(contentsBuf, contents.length() + 1);
+    contentsBuf[contents.length()] = 0; // end with null character
     doc.parse<0>(contentsBuf);
 
     /* load BIOS */
