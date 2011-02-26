@@ -13,11 +13,11 @@ Motherboard::Motherboard()
 : memorySize(0)
 { }
 
-MemSize Motherboard::getMemorySize() const {
+MemAddress Motherboard::getMemorySize() const {
     return this->memorySize;
 }
 
-void Motherboard::setMemorySize(MemSize size)
+void Motherboard::setMemorySize(MemAddress size)
 {
     this->memorySize = size;
 }

@@ -7,15 +7,22 @@
 
 #include <stdexcept>
 #include <getopt.h>
-#include <cstring>
+#include <string>
 #include <iostream>
 #include <fstream>
 #include "rapidxml/rapidxml.hpp"
 
 #include "motherboard.h"
+#include "cpu.h"
+#include "dladapter.h"
 
 using namespace std;
 using namespace motherboard;
+
+#define RET_ERR_RT      -1
+#define RET_ERR_ARG     -2
+#define RET_ERR_FIO     -3
+#define RET_ERR_BIOS    -4
 
 void displayUsage(char* progName);
 
@@ -50,7 +57,41 @@ int main(int argc, char** argv)
         return 0;
 
     Motherboard mb;
-    loadBios(bios, mb);
+    try
+    {
+        loadBios(bios, mb);
+    } catch (rapidxml::parse_error e)
+    {
+        cerr << "BIOS could not be parsed:\n" << e.what() << endl;
+        return RET_ERR_BIOS;
+    } catch (runtime_error e)
+    {
+        cerr << "A runtime error occurred" << endl;
+        return RET_ERR_RT;
+    } catch (exception e)
+    {
+        cerr << "A runtime error occurred" << endl;
+        return RET_ERR_RT;
+    }
+
+    // this is for testing the DlAdapter
+    DlAdapter dlLoader;
+
+    Cpu* cpu = dynamic_cast<Cpu*>( dlLoader.loadDevice("build/libbasiccpu.so", mb) );
+    if (cpu)
+    {
+        cout << "CPU name is " << cpu->getName() << endl;
+        delete cpu;
+        cpu = 0;
+    }
+
+    Cpu* cpu2 = dynamic_cast<Cpu*>( dlLoader.loadDevice("build/libbasiccpu.so", mb) );
+    if (cpu2)
+    {
+        cout << "CPU name is " << cpu2->getName() << endl;
+        delete cpu2;
+        cpu2 = 0;
+    }
 
     return 0;
 }

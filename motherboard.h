@@ -11,7 +11,7 @@
 namespace motherboard
 {
 
-typedef int MemSize;
+typedef int MemAddress;
 
 /**
  * Central class to the Matrix VM
@@ -22,6 +22,7 @@ typedef int MemSize;
 class Motherboard
 {
 public:
+
     /**
      * Creates an unbootable Motherboard.  Use the setters to make it bootable.
      */
@@ -30,17 +31,18 @@ public:
     /**
      * @return Size of memory (in bytes)
      */
-    MemSize getMemorySize() const;
+    MemAddress getMemorySize() const;
 
     /**
      * @param[in]   size    Size of memory in bytes
      */
-    void setMemorySize(MemSize size);
+    void setMemorySize(MemAddress size);
 
 private:
+
     Motherboard(const Motherboard& mb) { }; /* copy not permitted */
 
-    MemSize memorySize;
+    MemAddress memorySize;
 };
 
 }   // namespace motherboard
