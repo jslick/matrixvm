@@ -18,7 +18,11 @@
  * The adapter maintains and cleans up resources
  */
 class DlAdapter : public LinuxDlAdapter
-{ };
+{
+protected:
+
+    DlAdapter() : LinuxDlAdapter() { }
+};
 #else
 
 #endif

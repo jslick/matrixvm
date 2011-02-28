@@ -8,6 +8,10 @@
 #ifndef MOTHERBOARD_H
 #define MOTHERBOARD_H
 
+#include <vector>
+
+class Cpu;
+
 namespace motherboard
 {
 
@@ -29,6 +33,11 @@ public:
     Motherboard();
 
     /**
+     * Destroys the Motherboard's CPUs
+     */
+    ~Motherboard();
+
+    /**
      * @return Size of memory (in bytes)
      */
     MemAddress getMemorySize() const;
@@ -38,11 +47,23 @@ public:
      */
     void setMemorySize(MemAddress size);
 
+    /**
+     * Add a CPU instance to the motherboard
+     * @param[in]   cpu     CPU to add to the motherboard
+     * @param[in]   master  Whether or not the Cpu is the master CPU
+     * @note    The Motherboard destructor will delete this CPU.
+     */
+    void addCpu(Cpu* cpu, bool master = false);
+
 private:
 
     Motherboard(const Motherboard& mb) { }; /* copy not permitted */
 
     MemAddress memorySize;
+
+    std::vector<Cpu*> cpus;
+
+    int masterCpu;
 };
 
 }   // namespace motherboard

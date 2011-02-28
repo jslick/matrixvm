@@ -46,6 +46,8 @@ public:
 
 protected:
 
+    LinuxDlAdapter() { }    /* enforce singleton */
+
     /**
      * Get the handle to the library
      * @param[in]   libraryPath
@@ -61,9 +63,34 @@ protected:
      */
     LibHandle loadLibrary(const std::string& libraryPath);
 
+    static LinuxDlAdapter* instance;
+
 private:
 
     std::map<std::string, LibHandle> libHandles;
+
+public:
+
+    /**
+     * @return  The Adapter singleton
+     * @note    If this function is called 1 or more times, cleanup() must be
+     *          called at the end of the program to prevent memory leaks and
+     *          open handles.
+     */
+    static LinuxDlAdapter* getInstance();
+
+    /**
+     * Delete the adapter singleton and close handles
+     */
+    static void cleanup();
+
+    /**
+     * @param[in]   baseName    The base name of the library.  For example, in
+     *                          Linux, baseName="tea" would return
+     *                          "libtea.so".
+     * @return The system-specific library name from the base name
+     */
+    static std::string getLibraryName(const std::string& baseName);
 };
 
 #endif // LINUX_DL_ADAPTER_H

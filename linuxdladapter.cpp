@@ -18,6 +18,8 @@ using namespace motherboard;
 
 typedef Device* (*GetDeviceFunc)(Motherboard&);
 
+LinuxDlAdapter* LinuxDlAdapter::instance = 0;
+
 /* public LinuxDlAdapter */
 
 LinuxDlAdapter::~LinuxDlAdapter()
@@ -73,4 +75,28 @@ LibHandle LinuxDlAdapter::loadLibrary(const std::string& libraryPath)
     this->libHandles[libraryPath] = libHandle;
 
     return libHandle;
+}
+
+/* public static LinuxDlAdapter */
+
+LinuxDlAdapter* LinuxDlAdapter::getInstance()
+{
+    if (!instance)
+        instance = new LinuxDlAdapter();
+
+    return instance;
+}
+
+void LinuxDlAdapter::cleanup()
+{
+    if (instance)
+    {
+        delete instance;
+        instance = 0;
+    }
+}
+
+string LinuxDlAdapter::getLibraryName(const string& baseName)
+{
+    return "lib" + baseName + ".so";
 }
