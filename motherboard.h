@@ -9,12 +9,15 @@
 #define MOTHERBOARD_H
 
 #include <vector>
+#include <string>
+
+
+namespace machine
+{
 
 class Cpu;
 
-namespace motherboard
-{
-
+typedef std::string Memory;
 typedef int MemAddress;
 
 /**
@@ -25,6 +28,8 @@ typedef int MemAddress;
  */
 class Motherboard
 {
+    friend class Cpu;
+
 public:
 
     /**
@@ -55,6 +60,18 @@ public:
      */
     void addCpu(Cpu* cpu, bool master = false);
 
+    /**
+     * Start virtual machine
+     */
+    void start();
+
+protected:
+
+    /**
+     * @return reference to main memory
+     */
+    Memory& getMemory();
+
 private:
 
     Motherboard(const Motherboard& mb) { }; /* copy not permitted */
@@ -63,7 +80,9 @@ private:
 
     std::vector<Cpu*> cpus;
 
-    int masterCpu;
+    int masterCpu;  //< Cpu index to boot from
+
+    Memory memory;  //< Main memory
 };
 
 }   // namespace motherboard

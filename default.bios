@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <motherboard>
-   <memory size="1024"></memory>
+   <memory size="1024" burst="2048"></memory>
    <cpu dir="build" load="basiccpu" count="1" master="0"></cpu>
    <writable name="disk0" size="1024" filename="mydisk.writable"></writable>
 </motherboard>

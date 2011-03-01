@@ -11,6 +11,9 @@
 #include "device.h"
 #include "motherboard.h"
 
+namespace machine
+{
+
 class Cpu : public Device
 {
 public:
@@ -19,9 +22,20 @@ public:
 
     /**
      * Start processing CPU instructions at a place in memory
+     * @param[in]   mb      Motherboard to operate on
      * @param[in]   addr    Place in memory to start processing from
      */
-    virtual void start(motherboard::MemAddress addr) = 0;
+    virtual void start(Motherboard& mb, MemAddress addr) = 0;
+
+protected:
+
+    /**
+     * @param[in]   mb
+     * @return Main memory from Motherboard
+     */
+    Memory& getMemory(Motherboard& mb) { return mb.getMemory(); }
 };
+
+}   // namespace machine
 
 #endif // CPU_H

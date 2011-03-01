@@ -9,27 +9,26 @@
 #include "common.h"
 
 using namespace std;
-using namespace motherboard;
+using namespace machine;
 
 /* public function */
 
-SLDECL Device* createDevice(Motherboard& mb)
+// declared, but not defined, in device.h
+SLDECL Device* createDevice()
 {
-    return new MyCpu(mb);
+    return new MyCpu;
 }
 
 /* public MyCpu */
-
-MyCpu::MyCpu(Motherboard& mb)
-: mb(mb)
-{   }
 
 string MyCpu::getName() const
 {
     return "MyCpu";
 }
 
-void MyCpu::start(MemAddress addr)
+#include <iostream> // TODO:  remove
+void MyCpu::start(Motherboard& mb, MemAddress addr)
 {
-
+    Memory& memory = Cpu::getMemory(mb);
+    cout << &memory[addr] << endl;
 }

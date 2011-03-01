@@ -8,8 +8,12 @@
 #include "motherboard.h"
 #include "cpu.h"
 
+#include <stdexcept>
+
 using namespace std;
-using namespace motherboard;
+using namespace machine;
+
+/* public Motherboard */
 
 Motherboard::Motherboard()
 : memorySize(0), masterCpu(0)
@@ -38,4 +42,27 @@ void Motherboard::addCpu(Cpu* cpu, bool master /* = false */)
     this->cpus.push_back(cpu);
     if (master)
         this->masterCpu = this->cpus.size() - 1;
+}
+
+void Motherboard::start()
+{
+    if (this->cpus.size() < 1)
+        throw runtime_error("There are no CPUs to run on");
+    // get master CPU
+    Cpu* masterCpu = this->cpus[this->masterCpu];
+
+    this->memory = Memory(this->memorySize, 0);
+
+    char bios[] = { 1, 24, 2, 48, 0 };
+    for (int i = 0; i < 5; ++i)
+        this->memory[i] = bios[i];
+
+    masterCpu->start(*this, 0);
+}
+
+/* protected Motherboard */
+
+Memory& Motherboard::getMemory()
+{
+    return this->memory;
 }

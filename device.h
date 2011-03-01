@@ -13,6 +13,9 @@
 
 #include <string>
 
+namespace machine
+{
+
 class Device
 {
 public:
@@ -25,13 +28,15 @@ public:
     virtual ~Device() { }
 };
 
+}   // namespace machine
+
 /**
  * Create an instance of the device
- * @param[in]   mb  The Motherboard instance that the device belongs to
  * @return  The loaded device
  * @post    The calling function should delete the device.  The library does
- *          not delete the object.
+ *          not delete the object.  The `new` and `delete` must *not* be
+ *          overridden.
  */
-SLDECL Device* createDevice(motherboard::Motherboard& mb);
+SLDECL machine::Device* createDevice();
 
 #endif // DEVICE_H

@@ -18,7 +18,7 @@
 #include "dladapter.h"
 
 using namespace std;
-using namespace motherboard;
+using namespace machine;
 
 #define RET_ERR_RT      -1
 #define RET_ERR_ARG     -2
@@ -93,6 +93,7 @@ int boot(const string& bios)
     try
     {
         loadBios(bios, mb);
+        mb.start();
     } catch (rapidxml::parse_error e)
     {
         cerr << "BIOS could not be parsed:\n" << e.what() << endl;

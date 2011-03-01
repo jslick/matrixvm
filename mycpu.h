@@ -11,15 +11,12 @@
 #include "cpu.h"
 #include "motherboard.h"
 
+namespace machine
+{
+
 class MyCpu : public Cpu
 {
 public:
-
-    /**
-     * Create a new MyCpu
-     * @param[in]   mb  Motherboard instance that CPU is to run on
-     */
-    MyCpu(motherboard::Motherboard& mb);
 
     /**
      * @return  Name of device
@@ -28,13 +25,13 @@ public:
 
     /**
      * Start processing CPU instructions at a place in memory
+     * @param[in]   mb      Motherboard to operate on
      * @param[in]   addr    Place in memory to start processing from
      */
-    void start(motherboard::MemAddress addr);
+    void start(Motherboard& mb, MemAddress addr);
 
-private:
-
-    motherboard::Motherboard& mb;
 };
+
+}   // namespace machine
 
 #endif // MYCPU_H

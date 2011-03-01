@@ -14,9 +14,9 @@
 #include <dlfcn.h>
 
 using namespace std;
-using namespace motherboard;
+using namespace machine;
 
-typedef Device* (*GetDeviceFunc)(Motherboard&);
+typedef Device* (*GetDeviceFunc)();
 
 LinuxDlAdapter* LinuxDlAdapter::instance = 0;
 
@@ -38,15 +38,18 @@ Device* LinuxDlAdapter::loadDevice(const string& libraryPath, Motherboard& mb)
 {
     LibHandle libHandle = this->getHandle(libraryPath);
 
-    GetDeviceFunc fn = reinterpret_cast<GetDeviceFunc>( dlsym(libHandle, "createDevice") );
+    GetDeviceFunc fn = reinterpret_cast<GetDeviceFunc>(
+        dlsym(libHandle, "createDevice")
+        );
     if (dlerror())  // passing up rv
     {
         stringstream msg;
-        msg << "Function 'createDevice' is missing from " << libraryPath << endl;
+        msg << "Function 'createDevice' is missing from " << libraryPath
+            << endl;
         throw std::runtime_error(msg.str());
     }
 
-    Device* dev = (*fn)(mb);
+    Device* dev = (*fn)();
 
     return dev;
 }

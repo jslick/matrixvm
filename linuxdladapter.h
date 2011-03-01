@@ -42,7 +42,8 @@ public:
      * @note    The library at libraryPath must have the createDevice method
      *          with the proper function signature.
      */
-    Device* loadDevice(const std::string& libraryPath, motherboard::Motherboard& mb);
+    machine::Device* loadDevice(const std::string& libraryPath,
+                                machine::Motherboard& mb);
 
 protected:
 
@@ -63,7 +64,7 @@ protected:
      */
     LibHandle loadLibrary(const std::string& libraryPath);
 
-    static LinuxDlAdapter* instance;
+    static LinuxDlAdapter* instance;    //< singleton adapter
 
 private:
 
