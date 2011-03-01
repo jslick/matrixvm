@@ -11,7 +11,7 @@
 #include <iostream>
 #include <fstream>
 #include <boost/filesystem.hpp> // path
-#include "rapidxml/rapidxml.hpp"
+#include <rapidxml/rapidxml.hpp>
 
 #include "motherboard.h"
 #include "cpu.h"
@@ -96,15 +96,15 @@ int boot(const string& bios)
         mb.start();
     } catch (rapidxml::parse_error e)
     {
-        cerr << "BIOS could not be parsed:\n" << e.what() << endl;
+        cerr << "BIOS could not be parsed:\n  " << e.what() << endl;
         return RET_ERR_BIOS;
     } catch (runtime_error e)
     {
-        cerr << "A runtime error occurred:\n" << e.what() << endl;
+        cerr << "A runtime error occurred:\n  " << e.what() << endl;
         return RET_ERR_RT;
     } catch (exception e)
     {
-        cerr << "A runtime error occurred:\n" << e.what() << endl;
+        cerr << "A runtime error occurred:\n  " << e.what() << endl;
         return RET_ERR_RT;
     }
 

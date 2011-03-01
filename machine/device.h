@@ -8,7 +8,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include "common.h"
+#include <common/common.h>
 #include "motherboard.h"
 
 #include <string>

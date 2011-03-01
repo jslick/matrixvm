@@ -8,8 +8,8 @@
 #ifndef MYCPU_H
 #define MYCPU_H
 
-#include "cpu.h"
-#include "motherboard.h"
+#include <machine/cpu.h>
+#include <machine/motherboard.h>
 
 namespace machine
 {
