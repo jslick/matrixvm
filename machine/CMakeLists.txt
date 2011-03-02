@@ -9,5 +9,13 @@ if (HAVE_DL)
 endif (HAVE_DL)
 
 # build
-add_executable(matrixvm matrixvm.cpp motherboard.cpp dladapter.cpp)
-target_link_libraries(matrixvm boost_filesystem boost_system ${EXTRA_LIBS})
+add_executable( matrixvm
+                matrixvm.cpp
+                motherboard.cpp
+                dladapter.cpp
+                charoutputdevice.cpp)
+target_link_libraries(matrixvm
+                      boost_filesystem
+                      boost_system
+                      boost_thread-mt
+                      ${EXTRA_LIBS})

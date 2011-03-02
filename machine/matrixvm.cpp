@@ -16,6 +16,7 @@
 #include "motherboard.h"
 #include "cpu.h"
 #include "dladapter.h"
+#include "charoutputdevice.h"
 
 using namespace std;
 using namespace machine;
@@ -54,7 +55,7 @@ void readFile(const string& filename, string& contents);
  * @param[in]       bios_file   XML BIOS file to load
  * @param[in,out]   mb          Motherboard to load BIOS into
  */
-void loadBios(const string& bios_file, Motherboard& mb);
+void loadBios(const string& biosFile, Motherboard& mb);
 
 /**
  * Load `count` CPUs into the motherboard
@@ -69,6 +70,12 @@ void loadBios(const string& bios_file, Motherboard& mb);
 void loadCpu(const string& nativeLibPath,
              Motherboard& mb,
              int count, int master);
+
+/**
+ * Report a Motherboard exception
+ * @param[in] e     The exception that occurred
+ */
+void reportMachineException(exception& e);
 
 int main(int argc, char** argv)
 {
@@ -87,12 +94,15 @@ void displayUsage(char* progName)
     cout << "Usage:  \n  " << progName << " bios_file" << endl;
 }
 
+// TODO:  abstract outside of main exe
 int boot(const string& bios)
 {
     Motherboard mb;
+    mb.setExceptionReport(&reportMachineException);
     try
     {
         loadBios(bios, mb);
+        mb.addDevice(new CharOutputDevice);
         mb.start();
     } catch (rapidxml::parse_error e)
     {
@@ -172,12 +182,12 @@ void readFile(const string& filename, string& contents)
     in.close();
 }
 
-void loadBios(const string& bios_file, Motherboard& mb)
+void loadBios(const string& biosFile, Motherboard& mb)
 {
     using namespace rapidxml;
 
     string contents;
-    readFile(bios_file, contents);
+    readFile(biosFile, contents);
 
     /* parse BIOS */
     xml_document<> doc;
@@ -259,4 +269,9 @@ void loadCpu(const string& nativeLibPath, Motherboard& mb, int count, int master
         if (cpu)
             mb.addCpu(cpu, i == master);
     }
+}
+
+void reportMachineException(exception& e)
+{
+    cerr << "MACHINE exception:\n" << e.what() << '\n' << endl;
 }

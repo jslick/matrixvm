@@ -9,7 +9,6 @@
 #define CPU_H
 
 #include "device.h"
-#include "motherboard.h"
 
 namespace machine
 {
@@ -26,14 +25,6 @@ public:
      * @param[in]   addr    Place in memory to start processing from
      */
     virtual void start(Motherboard& mb, MemAddress addr) = 0;
-
-protected:
-
-    /**
-     * @param[in]   mb
-     * @return Main memory from Motherboard
-     */
-    Memory& getMemory(Motherboard& mb) { return mb.getMemory(); }
 };
 
 }   // namespace machine

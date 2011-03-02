@@ -11,7 +11,12 @@
 using namespace std;
 using namespace machine;
 
-/* public function */
+// TODO:  Move these
+#define HALT    0x00
+#define MOV1    0x08
+#define MOV2    0x09
+
+/* public MyCpu */
 
 // declared, but not defined, in device.h
 SLDECL Device* createDevice()
@@ -26,9 +31,20 @@ string MyCpu::getName() const
     return "MyCpu";
 }
 
-#include <iostream> // TODO:  remove
 void MyCpu::start(Motherboard& mb, MemAddress addr)
 {
-    Memory& memory = Cpu::getMemory(mb);
-    cout << &memory[addr] << endl;
+    Memory& memory = Device::getMemory(mb);
+
+    bool halt = false;
+    while (!halt)
+    {
+        switch (memory[addr++])
+        {
+        case HALT:
+            halt = true;
+            break;
+        default:    // undefined instruction
+            break;
+        }
+    }
 }
