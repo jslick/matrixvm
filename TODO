@@ -1,0 +1,13 @@
+== emulator ==
+* Paging
+* Protected memory
+* Interrupts & faults
+* Threading for non-blocking device usage
+* Dynamic library adapters for various platforms
+* Virtual disks
+
+== CPU ==
+* Supervisor & User modes
+* Many opcodes
+* Figure out addressing modes
+* Execution synchronization
