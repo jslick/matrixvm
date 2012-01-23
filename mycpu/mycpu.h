@@ -1,6 +1,5 @@
 /**
  * @file    mycpu.h
- * @author  Jason Eslick <jasoneslick@ku.edu>
  *
  * Matrix VM
  */
@@ -8,6 +7,7 @@
 #ifndef MYCPU_H
 #define MYCPU_H
 
+#include "opcodes.h"
 #include <machine/cpu.h>
 
 namespace machine
@@ -29,6 +29,11 @@ public:
      */
     void start(Motherboard& mb, MemAddress addr);
 
+private:
+
+    // registers
+    MemAddress r1;
+    MemAddress r2;
 };
 
 }   // namespace machine

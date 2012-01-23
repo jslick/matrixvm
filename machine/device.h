@@ -1,6 +1,5 @@
 /**
  * @file    device.h
- * @author  Jason Eslick <jasoneslick@ku.edu>
  *
  * Matrix VM
  */
@@ -8,7 +7,7 @@
 #ifndef DEVICE_H
 #define DEVICE_H
 
-#include <common/common.h>
+#include <common.h>
 #include "motherboard.h"
 
 #include <string>
@@ -20,12 +19,12 @@ class Device
 {
 public:
 
+    virtual ~Device() { }
+
     /**
      * @return  Name of the device
      */
     virtual std::string getName() const = 0;
-
-    virtual ~Device() { }
 
     /**
      * Initialize the device
@@ -36,13 +35,20 @@ public:
      */
     virtual void init(Motherboard& mb) { }
 
+    /**
+     * Write to this device
+     * @param[in]   what    Word to write to device
+     * @param[in]   port    Port that was invoked to write to this device
+     */
+    virtual void write(MemAddress what, int port) { }
+
 protected:
 
     /**
      * @param[in]   mb
      * @return Main memory from Motherboard
      */
-    Memory& getMemory(Motherboard& mb) { return mb.getMemory(); }
+    std::vector<uint8_t>& getMemory(Motherboard& mb) { return mb.getMemory(); }
 
     /**
      * Request DMA memory from the Motherboard
@@ -57,21 +63,35 @@ protected:
     }
 
     /**
-     * Request a device thread from the Motherboard
-     * @param[in]   mb
-     * @param[in]   dev     Requesting device
-     * @param[in]   cb      Callback used to perform I/O (the probably reason
-     *                      for the thread)
-     * @param[in]   speed   Relative speed of the device (rate of I/O)
-     * @sa Motherboard::requestThread
+     * Request port from the motherboard
+     * @param[in]   mb      Motherboard
+     * @param[in]   dev     Device that is requesting the port
+     * @param[in]   port    Port number to request.  Defaults to 0
+     * @return  Number of obtained port, or 0 to indicate failure
+     * @sa Motherboard::requestPort
      */
-    bool requestThread( Motherboard&    mb,
-                        Device*         dev,
-                        DeviceCallFunc  cb,
-                        DeviceSpeed     speed)
+    int requestPort(
+        Motherboard&    mb,
+        Device*         dev,
+        int             port = 0)
     {
-        return mb.requestThread(dev, cb, speed);
+        return mb.requestPort(dev, port);
     }
+
+    /**
+     * Tell the motherboard to write to a port
+     * @param[in]   mb      Motherboard
+     * @param[in]   port    Port to write to
+     * @param[in]   what    Word to write to device
+     */
+    void writeMb(
+        Motherboard&    mb,
+        int             port,
+        MemAddress      what)
+    {
+        return mb.write(port, what);
+    }
+
 };
 
 }   // namespace machine

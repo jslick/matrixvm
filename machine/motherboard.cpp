@@ -1,6 +1,5 @@
 /**
  * @file    motherboard.cpp
- * @author  Jason Eslick <jasoneslick@ku.edu>
  *
  * Matrix VM
  */
@@ -9,6 +8,7 @@
 #include "cpu.h"
 #include "device.h"
 
+#include <sstream>
 #include <cassert>
 #include <stdexcept>
 
@@ -18,7 +18,7 @@ using namespace machine;
 /* public Motherboard */
 
 Motherboard::Motherboard()
-: memorySize(0), masterCpu(0), reservedSize(1 /* reserve 0 */),
+: memorySize(0), exeStart(0), masterCpu(0), reservedSize(1 /* reserve 0 */),
   reportCb(0)
 { }
 
@@ -49,6 +49,19 @@ MemAddress Motherboard::getMemorySize() const
 void Motherboard::setMemorySize(MemAddress size)
 {
     this->memorySize = size;
+}
+
+void Motherboard::setBios(vector<uint8_t>& program, MemAddress exeStart /* = 0 */)
+{
+    if (exeStart % 4)
+    {
+        stringstream msg;
+        msg << "Invalid start address:  0x" << hex << exeStart;
+        throw runtime_error(msg.str());
+    }
+
+    this->bios = program;
+    this->exeStart = exeStart;
 }
 
 void Motherboard::addCpu(Cpu* cpu, bool master /* = false */)
@@ -82,12 +95,7 @@ void Motherboard::start()
     Cpu* masterCpu = this->cpus[this->masterCpu];
 
     // initialize memory
-    this->memory = Memory(this->memorySize, 0);
-
-    // temporary test code
-    char bios[] = { 1, 24, 2, 48, 0 };
-    for (int i = 0; i < 5; ++i)
-        this->memory[i + this->reservedSize] = bios[i];
+    this->memory = vector<uint8_t>(this->memorySize, 0);
 
     // initialize each device
     for (vector<Device*>::size_type i = 0; i < this->devices.size(); ++i)
@@ -95,35 +103,29 @@ void Motherboard::start()
         try
         {
             this->devices[i]->init(*this);
-        } catch (exception& e)
+        }
+        catch (exception& e)
         {   // don't crash VM; just ignore device
             this->reportException(e);
         }
     }
 
-    // create device threads
-    for (list<DeviceThread>::iterator iter = this->deviceThreads.begin();
-         iter != this->deviceThreads.end();
-         ++iter)
+    int exeStart = this->exeStart <= 0 ? this->reservedSize : this->exeStart;
+    int exeMod = exeStart % 4;
+    if (exeMod)
+        exeStart += (4 - exeMod);
+    for (unsigned int i = 0; i < this->bios.size(); i++)
     {
-        this->startThread(*iter);
+        this->memory[i + exeStart] = bios[i];
     }
 
     try
     {
-        masterCpu->start(*this, this->reservedSize);
+        // TODO:  thread it
+        masterCpu->start(*this, exeStart);
     } catch (exception& e)
     {   // don't crash VM while other threads can be running
         this->reportException(e);
-    }
-    // join device threads
-    for (list<DeviceThread>::iterator iter = this->deviceThreads.begin();
-         iter != this->deviceThreads.end();
-         ++iter)
-    {
-        boost::thread* thd = (*iter).thd;
-        if (thd)
-            thd->join();
     }
 }
 
@@ -135,7 +137,7 @@ inline void Motherboard::reportException(exception& e)
 
 /* protected Motherboard */
 
-Memory& Motherboard::getMemory()
+vector<uint8_t>& Motherboard::getMemory()
 {
     return this->memory;
 }
@@ -155,46 +157,31 @@ MemAddress Motherboard::reserveMemIO(MemAddress size)
     }
 }
 
-bool Motherboard::requestThread(Device*         dev,
-                                DeviceCallFunc  cb,
-                                DeviceSpeed     speed)
+int Motherboard::requestPort(Device* dev, int port /* = 0 */)
 {
-    assert(cb);
-    if (!dev)
-        throw runtime_error("Cannot request device thread for null device");
-    assert(cb);
-    if (!cb)
-        throw runtime_error("Cannot request device thread with null callback");
-
-    DeviceThread dt;
-    dt.dev   = dev;
-    dt.cb    = cb;
-    dt.speed = speed;
-    this->deviceThreads.push_back(dt);
-
-    return true;
-}
-
-/* private Motherboard */
-
-void Motherboard::startThread(DeviceThread& dt)
-{
-    dt.thd = new boost::thread(&Motherboard::runDeviceThread, this, dt);
-}
-
-/* static private Motherboard */
-
-void Motherboard::runDeviceThread(Motherboard* mb, DeviceThread& dt)
-{
-    if (!dt.cb)
-        return;
-
-    try
-    {
-        // TODO:  loop
-        (dt.cb)(dt.dev, *mb);
-    } catch (exception& e)
-    {   // don't crash thread/program
-        mb->reportException(e);
+    if (port == 0)
+    {   // find first available port
+        while(this->devicePorts.find(++port) != this->devicePorts.end());
     }
+    else if (this->devicePorts.find(port) != this->devicePorts.end())
+    {   // port already taken
+        return 0 /* false */;
+    }
+
+    this->devicePorts[port] = dev;
+
+    return port;
+}
+
+void Motherboard::write(int port, MemAddress what)
+{
+    std::unordered_map<int,Device*>::const_iterator iter = this->devicePorts.find(port);
+    if (iter == this->devicePorts.end())
+        throw runtime_error("Cannot write to port; no device is installed");
+    // TODO:  generate fault instead of throwing error!
+
+    Device* dev = (*iter).second;
+    assert(dev);
+
+    dev->write(what, port);
 }

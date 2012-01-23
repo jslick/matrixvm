@@ -1,14 +1,14 @@
 /**
  * @file    charoutputdevice.cpp
- * @author  Jason Eslick <jasoneslick@ku.edu>
  *
  * Matrix VM
  */
 
 #include "charoutputdevice.h"
 
-#include <iostream>
+#include <stdio.h>
 #include <stdexcept>
+#include <cassert>
 
 using namespace std;
 using namespace machine;
@@ -17,43 +17,31 @@ using namespace machine;
 
 string CharOutputDevice::getName() const
 {
-    return "RealStdout";
+    return "HostStdout";
 }
 
 void CharOutputDevice::init(Motherboard& mb)
 {
+    this->mb = &mb;
+
     MemAddress dmaLoc = Device::reserveMemIO(mb, OUTDEV_BUFFER_SIZE);
     if (dmaLoc < 0)
-        throw runtime_error("Could not request DMA memory for real stdout");
+        throw runtime_error("Could not request DMA memory for host stdout");
     else
         this->mappingAddr = dmaLoc;
+    // Set the boundary char.  This is inaccessible to the virtualized system.
+    // It allows us to print a c-string without any manipulation regardless of
+    // whether or not the buffer is null-terminated
+    vector<uint8_t>& memory = Device::getMemory(mb);
+    memory[dmaLoc + OUTDEV_BUFFER_SIZE - 1] = 0;
 
-    if (!Device::requestThread( mb,
-                                this,
-                                &CharOutputDevice::flushOutputCb,
-                                HighSpeed))
-    {
-        throw runtime_error("Could not initiate machine concurrency for "
-                            "stdout");
-    }
+    if (!Device::requestPort(mb, this, 1))
+        throw runtime_error("Could not initiate device port for host stdout");
 }
 
-void CharOutputDevice::flushOutput(Motherboard& mb)
+void CharOutputDevice::write(MemAddress what, int port)
 {
-    Memory& memory = Device::getMemory(mb);
-    cout << "DMA is at address " << this->mappingAddr << endl;
-    cout << &memory[this->mappingAddr] << endl; // the easy part ;)
-
-    throw runtime_error("Testing exception");
-}
-
-/* static public CharOutputDevice */
-
-void CharOutputDevice::flushOutputCb(Device* dev, Motherboard& mb)
-{
-    cout << "Made it\n";
-    assert(dev);
-    CharOutputDevice* outdev = dynamic_cast<CharOutputDevice*>( dev );
-    if (outdev)
-        outdev->flushOutput(mb);
+    // TODO:  thread it
+    printf("%s", reinterpret_cast<const char*>( &Device::getMemory(*mb)[this->mappingAddr+1] ));
+    // TODO:  interrupt
 }

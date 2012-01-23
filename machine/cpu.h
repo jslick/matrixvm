@@ -1,6 +1,5 @@
 /**
  * @file    cpu.h
- * @author  Jason Eslick <jasoneslick@ku.edu>
  *
  * Matrix VM
  */
@@ -25,6 +24,7 @@ public:
      * @param[in]   addr    Place in memory to start processing from
      */
     virtual void start(Motherboard& mb, MemAddress addr) = 0;
+
 };
 
 }   // namespace machine

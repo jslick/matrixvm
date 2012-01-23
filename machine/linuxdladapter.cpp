@@ -1,6 +1,5 @@
 /**
  * @file    linuxdladapter.cpp
- * @author  Jason Eslick <jasoneslick@ku.edu>
  *
  * Matrix VM
  */
@@ -38,14 +37,11 @@ Device* LinuxDlAdapter::loadDevice(const string& libraryPath, Motherboard& mb)
 {
     LibHandle libHandle = this->getHandle(libraryPath);
 
-    GetDeviceFunc fn = reinterpret_cast<GetDeviceFunc>(
-        dlsym(libHandle, "createDevice")
-        );
+    GetDeviceFunc fn = reinterpret_cast<GetDeviceFunc>( dlsym(libHandle, "createDevice") );
     if (dlerror())  // passing up rv
     {
         stringstream msg;
-        msg << "Function 'createDevice' is missing from " << libraryPath
-            << endl;
+        msg << "Function 'createDevice' is missing from " << libraryPath << endl;
         throw std::runtime_error(msg.str());
     }
 

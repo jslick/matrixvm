@@ -1,6 +1,5 @@
 /**
  * @file    charoutputdevice.h
- * @author  Jason Eslick <jasoneslick@ku.edu>
  *
  * Matrix VM
  */
@@ -13,7 +12,9 @@
 #include <string>
 
 // corresponds to the amount of memory-mapped to reserve
-#define OUTDEV_BUFFER_SIZE 82 // 8-bit flags + 80 chars + 1 null char
+#define OUTDEV_BUFFER_SIZE 83
+// 8 bits for flags + 80 chars + 1 null char + 1 boundary char (to eliminate
+// costly manipulation)
 
 namespace machine
 {
@@ -28,32 +29,29 @@ class CharOutputDevice : public Device
 {
 public:
 
+    virtual ~CharOutputDevice() { }
+
     /**
      * @return  Name of the device
      */
     virtual std::string getName() const;
 
-    virtual ~CharOutputDevice() { }
-
     virtual void init(Motherboard& init);
 
     /**
-     * Flush output to real OS standard streams
-     * @param[in] mb
-     */
-    virtual void flushOutput(Motherboard& mb);
-
-    /**
-     * Wrapper for CharOutputDevice::flushOutput
+     * Writes the buffer located at the reserverd DMA location to a file on the
+     * host
      *
-     * This is called by the Motherboard Device thread for this device.
-     * @param[in] dev   Used to call flushOutput
-     * @param[in] mb
+     * @param[in]   what    Ignored
+     * @param[in]   port    Currently ignored
      */
-    static void flushOutputCb(Device* dev, Motherboard& mb);
+    virtual void write(MemAddress what, int port);
 
 private:
-    MemAddress mappingAddr;
+
+    Motherboard* mb;
+
+    MemAddress mappingAddr; //<! The DMA address of the obtained reserved memory
 };
 
 }   // namespace machine

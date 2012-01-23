@@ -1,12 +1,15 @@
 /**
  * @file    common.h
- * @author  Jason Eslick <jasoneslick@ku.edu>
  *
  * Matrix VM
  */
 
-#ifndef COMMON_H
-#define COMMON_H
+#include <stdint.h>
+#include <vector>
+
+// Config
+#define DEBUG       0
+#define CHECK_INSTR 1
 
 // shared library declaration
 #ifdef __cplusplus
@@ -15,4 +18,4 @@
 #define SLDECL
 #endif  // __cplusplus
 
-#endif // COMMON_H
+typedef int32_t MemAddress;
