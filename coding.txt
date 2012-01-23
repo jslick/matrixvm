@@ -1,0 +1,74 @@
+Coding style for Matrix VM
+
+== Whitespace ==
+* Expand tabs to 4 spaces.
+* Generally, no spaces padding paranthesis for function calls.
+    something.push_back(val);
+* [C++] Exception:  casting
+    static_cast<unsigned int>( myVar );
+* Generally, no spaces padding inside the paranthesis for control structures.
+* Precede parathesis with whitespace for control structures.
+    if (condition)
+* Try to align stuff, including line continuation.
+    int     myvar    = -1;
+    char    otherVar = "Something";
+
+== Code Documentation ==
+* Document code with doxygen style comments, consistent with other code.
+* List every parameter, using @param and whether it is [in] [out] or [in,out].
+* Document the @return statement for non-void functions.
+* Use /* */ for higher-level comments and // for lower-level
+    /* start some threads */
+    for (int i = 0; i < threads.size(); ++i)
+    {
+        // prepare some data for this thread
+        ThreadData data = this->getThreadData(i);
+        // ...
+    }
+
+== Naming, Variables, Parameters ==
+* Use const correctness where appropriate.
+    void myFunc(const std::string& str);
+    int MyClass::get_something() const;
+* Use camelCase for variables and function/method names.
+* Class names should be proper-cased, each word starts with a capital letter.
+    class MyClass
+* [C++] Pointers are part of the _type_ of the variable, therefore the asterisk
+        is to be placed beside the type.  References are likewise.
+    char*   myPointer;
+    string& myString;
+* [C]   Asterisks are to be placed beside variable.
+    char *myPointer;
+* [C++] Prefer references over pointers
+* [C++] Use the `this` keyword to access class variables and class methods.
+        This makes it obvious which variables are local variables and which are
+        member variables, just from looking at it.  Best of all, it eliminates
+        the need for *ugly* prefix/suffix schemes (like mMyVar or m_myVar).
+    this->doSomething(this->myVar);
+
+== Miscellaneous ==
+* Curly braces on new lines.
+    if (something)
+    {
+        // statements
+    }
+* It is okay to make one-line functions for small functions.
+    int MyClass::getSomething const { return this->something; }
+* Obey 80-character line limit.  Because differs prefix lines with +/-, 79
+  characters is preferable.
+* It is okay to omit braces for if-statements.
+* Header files should *not* use `using namespace` statements.
+* [C++] Use C++ style casts.
+    static_cast<unsigned int>( myVar );
+* [C++] Use 0 instead of NULL.
+    myPointer = 0;
+* [C]   Use NULL for null.
+    myPointer = NULL;
+* No commented out code will be committed.  No, uncompilable code will be
+  committed.
+    // myVar = 5;       // <- will not be committed
+    #if 0               // <- will not be committed
+    doSomething();
+    #endif // 0
+* FOLLOW THE STYLE OF THE SURROUNDING CODE.
+* Exceptions may apply.
