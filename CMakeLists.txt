@@ -21,4 +21,4 @@ add_executable( matrixvm
 target_link_libraries(matrixvm
                       ${EXTRA_LIBS})
 
-add_subdirectory(mycpu)
+add_subdirectory(basiccpu)

@@ -1,5 +1,5 @@
 /**
- * @file    mycpu.h
+ * @file    basiccpu.h
  *
  * Matrix VM
  */
@@ -13,7 +13,7 @@
 namespace machine
 {
 
-class MyCpu : public Cpu
+class BasicCpu : public Cpu
 {
 public:
 

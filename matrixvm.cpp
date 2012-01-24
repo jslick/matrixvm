@@ -24,7 +24,7 @@ int main()
     assert(dlLoader);
     for (int i = 0; i < NUM_CPUS; ++i)
     {
-        Cpu* cpu = dynamic_cast<Cpu*>( dlLoader->loadDevice("mycpu/" + DlAdapter::getLibraryName("basiccpu"), *mb) );
+        Cpu* cpu = dynamic_cast<Cpu*>( dlLoader->loadDevice("basiccpu/" + DlAdapter::getLibraryName("basiccpu"), *mb) );
         if (cpu)
             mb->addCpu(cpu, i == 0);
     }
@@ -33,7 +33,7 @@ int main()
     // read bios
     uint8_t* bios;
     int      biosSize;
-    readFile("mycpu/bios", bios, biosSize);
+    readFile("basiccpu/bios", bios, biosSize);
     // convert to vector
     vector<uint8_t> biosProgram;
     biosProgram.reserve(biosSize);

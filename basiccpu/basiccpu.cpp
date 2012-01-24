@@ -1,10 +1,10 @@
 /**
- * @file    mycpu.h
+ * @file    basiccpu.cpp
  *
  * Matrix VM
  */
 
-#include "mycpu.h"
+#include "basiccpu.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,17 +24,17 @@ inline MemAddress getInstruction(vector<uint8_t>& memory, MemAddress& ip)
 // declared, but not defined, in device.h
 SLDECL Device* createDevice()
 {
-    return new MyCpu;
+    return new BasicCpu;
 }
 
-/* public MyCpu */
+/* public BasicCpu */
 
-string MyCpu::getName() const
+string BasicCpu::getName() const
 {
-    return "MyCpu";
+    return "BasicCpu";
 }
 
-void MyCpu::start(Motherboard& mb, MemAddress ip)
+void BasicCpu::start(Motherboard& mb, MemAddress ip)
 {
     vector<uint8_t>& memory = Device::getMemory(mb);
 
