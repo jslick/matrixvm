@@ -16,9 +16,9 @@ endif (HAVE_DL)
 add_executable( matrixvm
                 matrixvm.cpp
                 machine/motherboard.cpp
-                machine/dladapter.cpp
-                machine/charoutputdevice.cpp)
+                machine/dladapter.cpp)
 target_link_libraries(matrixvm
                       ${EXTRA_LIBS})
 
 add_subdirectory(basiccpu)
+add_subdirectory(dev)

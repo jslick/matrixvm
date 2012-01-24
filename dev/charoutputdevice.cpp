@@ -13,6 +13,12 @@
 using namespace std;
 using namespace machine;
 
+// declared, but not defined, in device.h
+SLDECL Device* createDevice()
+{
+    return new CharOutputDevice;
+}
+
 /* public CharOutputDevice */
 
 string CharOutputDevice::getName() const

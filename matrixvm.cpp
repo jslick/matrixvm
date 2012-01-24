@@ -1,7 +1,6 @@
 #include <machine/dladapter.h>
 #include <machine/motherboard.h>
 #include <machine/cpu.h>
-#include <machine/charoutputdevice.h>
 
 #include <stdexcept>
 #include <cassert>
@@ -27,8 +26,14 @@ int main()
         Cpu* cpu = dynamic_cast<Cpu*>( dlLoader->loadDevice("basiccpu/" + DlAdapter::getLibraryName("basiccpu"), *mb) );
         if (cpu)
             mb->addCpu(cpu, i == 0);
+        else
+            throw runtime_error("Could not load cpu device");
     }
-    mb->addDevice(new CharOutputDevice);
+    Device* charOutputDevice = dynamic_cast<Device*>( dlLoader->loadDevice("dev/" + DlAdapter::getLibraryName("charoutputdevice"), *mb) );
+    if (charOutputDevice)
+        mb->addDevice(charOutputDevice);
+    else
+        throw runtime_error("Could not load character output device");
 
     // read bios
     uint8_t* bios;

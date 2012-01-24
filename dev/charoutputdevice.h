@@ -7,7 +7,7 @@
 #ifndef CHAROUTPUTDEVICE_H
 #define CHAROUTPUTDEVICE_H
 
-#include "device.h"
+#include <machine/device.h>
 
 #include <string>
 
@@ -15,6 +15,8 @@
 #define OUTDEV_BUFFER_SIZE 83
 // 8 bits for flags + 80 chars + 1 null char + 1 boundary char (to eliminate
 // costly manipulation)
+
+// TODO:  move this device outside of machine/ ??
 
 namespace machine
 {
