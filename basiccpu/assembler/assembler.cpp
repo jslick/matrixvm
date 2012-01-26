@@ -18,7 +18,7 @@ int main()
     // db "Hello World!" 0x0a 0x00
     Instruction* db_hello = program.createInstruction("db");
     // \1 is the 'flags' byte to CharOutputDevice
-    db_hello->args.push_back(Argument(Argument::Type::String, "\1Hello World!\n"));
+    db_hello->args.push_back(Argument(Argument::Type::String, "Hello World!\n"));
     program.setSymbol("S1", db_hello);
 
     // load r1, S1
@@ -37,7 +37,7 @@ int main()
     // TODO:  Change to LOADB and implement that opcode
 
     // memcpy OUTPUT_DMA
-    const static uint8_t DMA_BUFFER = 1 /* CharOutputDevice uses memory @ 0x01 */;
+    const static uint8_t DMA_BUFFER = 2 /* CharOutputDevice uses memory @ 0x02 */;
     const static uint8_t OUTPUT_DMA[] = { 0, 0, 0, DMA_BUFFER }; // 32-bit argument
     Instruction* memcpy_dma = program.createInstruction("memcpy");
     memcpy_dma->args.push_back(Argument(Argument::Type::Immediate, OUTPUT_DMA, 4));
