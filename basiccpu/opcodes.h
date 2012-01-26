@@ -17,6 +17,7 @@
 /* Registers */
 #define INS_REG 16
 #define INS_REG_MASK ( 0xF << INS_REG )
+#define MAX_REGISTERS ( (INS_REG_MASK >> INS_REG) + 1 )
 #define EXTRACT_REG(instruction) ( (instruction & INS_REG_MASK) >> INS_REG )
 #define R1  ( 1 << INS_REG )
 #define R2  ( 2 << INS_REG )

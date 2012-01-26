@@ -42,7 +42,8 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     int16_t instr_operand;  // an operand part of an instruction
     MemAddress operand;     // a pointer-size operand following an instruction
 
-    vector<MemAddress*> registers(3);
+    MemAddress dummyReg;
+    vector<MemAddress*> registers(MAX_REGISTERS, &dummyReg);
     registers[1] = &r1;
     registers[2] = &r2;
 
@@ -66,7 +67,6 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         case LOAD:
             *registers[EXTRACT_REG(instruction)] = getInstruction(memory, ip);
-            // NOTE:  guest can crash host <-> speed
             break;
 
         case WRITE:
