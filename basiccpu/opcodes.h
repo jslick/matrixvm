@@ -8,14 +8,15 @@
 #define OPCODES
 
 /*
- * *---------------------------------------------*
- * |  31 |  30-23 |  22-20 | 19-17 |  16 || 15-0 |
- * | cnd | opcode | addrmd | extra | reg || word |
- * *---------------------------------------------*
+ * General instruction encoding
+ * *---------------------------------------*
+ * |  31-24 | 23-20 |  19-17 | 16-13 | ... |
+ * | opcode |  cnd  | addrmd |  reg  | ... |
+ * *---------------------------------------*
  */
 
 /* Registers */
-#define INS_REG 16
+#define INS_REG 13
 #define INS_REG_MASK ( 0xF << INS_REG )
 #define MAX_REGISTERS ( (INS_REG_MASK >> INS_REG) + 1 )
 #define EXTRACT_REG(instruction) ( (instruction & INS_REG_MASK) >> INS_REG )
@@ -23,7 +24,7 @@
 #define R2  ( 2 << INS_REG )
 
 /* Addressing modes */
-#define INS_ADDR 20
+#define INS_ADDR    17
 #define ABSOLUTE    ( 0 << INS_ADDR )
 #define RELATIVE    ( 1 << INS_ADDR )
 #define IMMEDIATE   ( 2 << INS_ADDR )
@@ -31,7 +32,7 @@
 
 /* Opcodes */
 
-#define INS_OPCODE 23
+#define INS_OPCODE      24
 #define INS_OPCODE_MASK ( 0xFF << INS_OPCODE )
 
 // CPU modes/stuff
