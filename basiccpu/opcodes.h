@@ -42,14 +42,17 @@
 #define JMP     ( 0x10 << INS_OPCODE )
 #define LNGJMP  ( 0x11 << INS_OPCODE )
 
-// Register load/store
-#define LOAD    ( 0x20 << INS_OPCODE )
-#define LOADW   ( 0x21 << INS_OPCODE )
-#define LOADB   ( 0x22 << INS_OPCODE )
-#define STORE   ( 0x28 << INS_OPCODE )
-#define STOREW  ( 0x29 << INS_OPCODE )
-#define STOREB  ( 0x2a << INS_OPCODE )
-#define MEMCPY  ( 0x30 << INS_OPCODE )
+// Move
+#define MOV     ( 0x20 << INS_OPCODE )
+
+// Load/Store
+#define LOAD    ( 0x28 << INS_OPCODE )
+#define LOADW   ( 0x29 << INS_OPCODE )
+#define LOADB   ( 0x2a << INS_OPCODE )
+#define STORE   ( 0x30 << INS_OPCODE )
+#define STOREW  ( 0x31 << INS_OPCODE )
+#define STOREB  ( 0x32 << INS_OPCODE )
+#define MEMCPY  ( 0x38 << INS_OPCODE )
 
 // I/O
 #define WRITE   ( 0x40 << INS_OPCODE )

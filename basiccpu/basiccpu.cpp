@@ -65,7 +65,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             ip += instr_operand - 4;    // -4 compensates for increment
             break;
 
-        case LOAD:
+        case MOV:
             *registers[EXTRACT_REG(instruction)] = getInstruction(memory, ip);
             break;
 

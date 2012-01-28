@@ -12,61 +12,77 @@
  */
 struct Argument
 {
-    enum Type { Immediate, String, Register, Symbol };
+    virtual void _dummy_() { /* me is polymorphic */ }
+};
 
-    Type type;
-    std::vector<uint8_t> value; //<! Data of varying relevance
+struct SymbolArgument : Argument
+{
+    std::string symbolName;
 
-    Argument(Type type, const std::vector<uint8_t>& value)
-    : type(type), value(value)
-    { }
+    SymbolArgument(const std::string& symbolName)
+    : symbolName(symbolName)
+    {}
+};
 
-    /**
-     * @param[in]   type
-     * @param[in]   value   Will be converted to vector, will null-terminator
-     */
-    Argument(Type type, const std::string& value)
-    : type(type)
+struct DataArgument : Argument
+{
+    std::vector<uint8_t> data;
+
+    DataArgument(const std::vector<uint8_t>& data)
+    : data(data)
+    {}
+
+    DataArgument(const uint8_t* data, int length)
+    : data(data, data+length)
+    {}
+};
+
+struct RegisterArgument : Argument
+{
+    std::string reg;
+
+    RegisterArgument(const std::string& reg)
+    : reg(reg)
+    {}
+};
+
+struct MathArgument : Argument
+{
+};
+
+struct DifferenceArgument : MathArgument
+{
+    std::string symbols[2];
+
+    DifferenceArgument(const std::string& symbol1, const std::string& symbol2)
     {
-        int length = value.length() + 1 /* null char */;
-        int mod = length % 4;
-        if (mod)
-            length += (4 - mod);
-        this->value.reserve(length);
-
-        for (unsigned int i = 0; i < value.length() /* null char */; i++)
-            this->value.push_back(value[i]);
-        for (unsigned int i = value.length(); i < static_cast<unsigned int>( length ); i++)
-            this->value.push_back(0);
-    }
-
-    /**
-     * @param[in]   type
-     * @param[in]   value
-     * @param[in]   valueSize   Size of param value
-     */
-    Argument(Type type, const uint8_t* value, int valueSize)
-    : type(type)
-    {
-        this->value.insert(this->value.end(), value, value + valueSize);
+        symbols[0] = symbol1;
+        symbols[1] = symbol2;
     }
 };
+
 
 struct Instruction
 {
     friend class Program;
 
+    enum AddrMode {
+        Immediate, Absolute, Relative, Indirect,
+        NumAddrModes
+    };
+
     std::string             instruction;    //!< Name of instruction
-    std::vector<Argument>   args;
     int                     address;        //!< To be calculated at assemble time
+    std::vector<Argument*>  args;
+    AddrMode                addrMode;
 
 private:
 
     /**
      * @param[in]   instruction     Name of instruction
      */
-    Instruction(const std::string& instruction)
-    : instruction(instruction), address(-1)
+    Instruction(const std::string& instruction, AddrMode addrMode = NumAddrModes)
+    : instruction(instruction), address(-1), addrMode(addrMode)
     { }
 };
 
@@ -91,7 +107,10 @@ public:
      * Create an instruction allocated on the heap
      * @param[in]   instruction     Name of instruction
      */
-    Instruction* createInstruction(const std::string& instruction);
+    Instruction* createInstruction(
+        const std::string&      instruction,
+        Instruction::AddrMode   addrMode = Instruction::AddrMode::NumAddrModes
+        );
 
     /**
      * Designate a symbol that starts at a particular instruction

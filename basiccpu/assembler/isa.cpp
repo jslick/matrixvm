@@ -8,12 +8,23 @@
 
 using namespace std;
 
-inline string vectToString(vector<uint8_t>& vect)
+MemAddress modeEnumToConstant(Instruction::AddrMode mode)
 {
-    string str;
-    str.append(reinterpret_cast<char*>( &vect.front() ));
+    switch (mode)
+    {
+    case Instruction::AddrMode::Immediate:
+        return IMMEDIATE;
+    case Instruction::AddrMode::Absolute:
+        return ABSOLUTE;
+    case Instruction::AddrMode::Relative:
+        return RELATIVE;
+    case Instruction::AddrMode::Indirect:
+        assert(false /* NOT IMPLEMENTED */);
+    default:
+        assert(false);
+    }
 
-    return str;
+    return 0;
 }
 
 inline MemAddress fourCharsToAddress(const vector<uint8_t>& value)
@@ -32,13 +43,16 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         if (instr->args.size() < 1)
             throw runtime_error("db must have arguments");
-        int size = instr->args[0].value.size();
+
+        DataArgument* data = dynamic_cast<DataArgument*>( instr->args[0] );
+        assert(data);
+        int size = data->data.size();
         int sizeMod = size % 4;
         if (sizeMod)
-            size += (4 - sizeMod);
+            size += 4 - sizeMod;
         return size;
     }
-    else if (instruction == "load")
+    else if (instruction == "mov")
     {
         return 8;
     }
@@ -72,7 +86,8 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         if (instr->args.size() < 1)
             throw runtime_error("jmp must have a destination");
 
-        const Instruction* destInstr = program.getInstructionAtLabel(vectToString(instr->args[0].value));
+        SymbolArgument* destSymbol = dynamic_cast<SymbolArgument*>( instr->args[0] );
+        const Instruction* destInstr = program.getInstructionAtLabel(destSymbol->symbolName);
         assert(destInstr);
 
         MemAddress diff = destInstr->address - instr->address;
@@ -86,7 +101,9 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         if (instr->args.size() < 1)
             throw runtime_error("db must have arguments");
 
-        const vector<uint8_t>& value = instr->args[0].value;
+        DataArgument* data = dynamic_cast<DataArgument*>( instr->args[0] );
+        assert(data);
+        const vector<uint8_t>& value = data->data;
         for (unsigned int i = 0; i < value.size(); i += 4)
         {
             MemAddress instruction = value[i+0] << 24 |
@@ -96,12 +113,13 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             generated.push_back(instruction);
         }
     }
-    else if (instruction == "load")
+    else if (instruction == "mov")
     {
         if (instr->args.size() < 2)
-            throw runtime_error("Load requires 2 arguments");
+            throw runtime_error("mov requires 2 arguments");
 
-        string reg = vectToString(instr->args[0].value);
+        RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args[0] );
+        const string& reg = regArg->reg;
         MemAddress instruction = reg == "r1" ? R1 :
                                  reg == "r2" ? R2 : 0;
         if (!instruction)
@@ -110,40 +128,32 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             msg << "Invalid register given to `load`:  " << reg;
             throw runtime_error(msg.str());
         }
-        instruction |= LOAD;
+        instruction |= MOV | modeEnumToConstant(instr->addrMode);
+        generated.push_back(instruction);
 
-        Argument::Type srcType = instr->args[1].type;
-
-        string src;
-        const Instruction* srcInstruction;
         MemAddress srcInstructionMem;
 
-        switch (srcType)
+        if (SymbolArgument* arg_sym = dynamic_cast<SymbolArgument*>( instr->args[1] ))
         {
-        case Argument::Type::Symbol:
-            instruction |= IMMEDIATE;
+            const Instruction* operandIns = program.getInstructionAtLabel(arg_sym->symbolName);
+            assert(operandIns);
+            srcInstructionMem = operandIns->address;
+        }
+        else if (DifferenceArgument* arg_diff = dynamic_cast<DifferenceArgument*>( instr->args[1] ))
+        {
+            const Instruction* operandIns[2];
+            operandIns[0] = program.getInstructionAtLabel(arg_diff->symbols[0]);
+            operandIns[1] = program.getInstructionAtLabel(arg_diff->symbols[1]);
+            assert(operandIns[0]);
+            assert(operandIns[1]);
 
-            try {
-                src = vectToString(instr->args[1].value);
-                srcInstruction = program.getInstructionAtLabel(src);
-            }
-            catch (out_of_range& e) {
-                stringstream msg;
-                msg << "Label not found:  " << src;
-                throw runtime_error(msg.str());
-            }
-            assert(srcInstruction);
-            srcInstructionMem = srcInstruction->address;
-            break;
-        case Argument::Type::Immediate:
-            instruction |= IMMEDIATE;
-
-            srcInstructionMem = fourCharsToAddress(instr->args[1].value);
-            break;
-        default:
+            srcInstructionMem = operandIns[0]->address - operandIns[1]->address;
+        }
+        else
+        {
             assert(false /* not yet implemented */);
         }
-        generated.push_back(instruction);
+
         generated.push_back(srcInstructionMem);
     }
     else if (instruction == "memcpy")
@@ -151,17 +161,16 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         if (instr->args.size() < 1)
             throw runtime_error("memcpy requires 1 argument");
 
-        Argument::Type destType = instr->args[0].type;
-        const vector<uint8_t>& dest = instr->args[0].value;
-        MemAddress destAddress = 0;
-        switch (destType)
-        {
-        case Argument::Type::Immediate:
-            generated.push_back(MEMCPY | IMMEDIATE);
+        generated.push_back(MEMCPY | modeEnumToConstant(instr->addrMode));
 
-            destAddress = fourCharsToAddress(dest);
-            break;
-        default:
+        MemAddress destAddress = 0;
+
+        if (DataArgument* arg_data = dynamic_cast<DataArgument*>( instr->args[0] ))
+        {
+            destAddress = fourCharsToAddress(arg_data->data);
+        }
+        else
+        {
             assert(false /* not yet implemented */);
         }
         generated.push_back(destAddress);
@@ -171,10 +180,14 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         if (instr->args.size() < 2)
             throw runtime_error("write requires 2 arguments");
 
-        vector<uint8_t> writePort = instr->args[0].value;
+        DataArgument* portArg = dynamic_cast<DataArgument*>( instr->args[0] );
+        assert(portArg);
+        vector<uint8_t> writePort = portArg->data;
         MemAddress opcode = WRITE | (writePort[0] << 8) | writePort[1];
         generated.push_back(opcode);
-        generated.push_back(fourCharsToAddress(instr->args[1].value));
+
+        DataArgument* whatArg = dynamic_cast<DataArgument*>( instr->args[1] );
+        generated.push_back(fourCharsToAddress(whatArg->data));
     }
     else if (instruction == "halt")
     {

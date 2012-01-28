@@ -1,5 +1,8 @@
 #include "program.h"
 
+#include <sstream>
+#include <stdexcept>
+
 using namespace std;
 
 Program::Program(const Isa& isa, int offset /* = 0 */)
@@ -12,9 +15,12 @@ Program::~Program()
         delete this->instructions[i];
 }
 
-Instruction* Program::createInstruction(const string& instruction)
+Instruction* Program::createInstruction(
+    const string&           instruction,
+    Instruction::AddrMode   addrMode /* = NumAddrModes */
+    )
 {
-    Instruction* instr = new Instruction(instruction);
+    Instruction* instr = new Instruction(instruction, addrMode);
     this->instructions.push_back(instr);
     return instr;
 }
@@ -26,7 +32,14 @@ void Program::setSymbol(const string& symbolName, Instruction* instr)
 
 const Instruction* Program::getInstructionAtLabel(const string& symbolName) const
 {
-    return this->symbols.at(symbolName);
+    try {
+        return this->symbols.at(symbolName);
+    }
+    catch (out_of_range& e) {
+        stringstream msg;
+        msg << "Label not found:  " << symbolName;
+        throw runtime_error(msg.str());
+    }
 }
 
 void Program::assemble(FILE* stream)
