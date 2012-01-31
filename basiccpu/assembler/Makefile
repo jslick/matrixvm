@@ -1,19 +1,36 @@
-CXX=g++
-CXXFLAGS:=-I ../../ $(CXXFLAGS) -g3 -std=c++0x -Wall
-LFLAGS:=
+LEX=lex
+YACC=yacc
+CC=gcc
+
+LEXFLAGS=
+#YFLAGS=
+YFLAGS=-t -v
+CFLAGS=-Wall -Wno-unused-label -Wno-unused -DNDEBUG
+#CFLAGS=-Wall -Wno-unused-label -Wno-unused
 
 EXE=assembler
-OBJS=assembler.o program.o isa.o
+OBJS=$(EXE).yacc.o $(EXE).lex.o
 
 all:  $(EXE)
 
 $(EXE):  $(OBJS)
-	$(CXX) $(LFLAGS) $+ -o $@
+	$(CC) $(LFLAGS) $+ -o $@
 
-%.o:  %.cpp %.h ../../common.h
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+%.o:  %.c %.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+%.lex.c: %.l
+	$(LEX) $(LEXFLAGS) -o $@ $<
+
+%.yacc.c: %.y
+	$(YACC) $(YFLAGS) -d -o $@ $<
 
 clean:
-	$(RM) $(EXE) *.o
+	$(RM) *.o
+	$(RM) *.lex.c
+	$(RM) *.yacc.c
+	$(RM) *.yacc.h
+	$(RM) *.yacc.output
+	$(RM) $(EXE)
 
 .phony:  all clean

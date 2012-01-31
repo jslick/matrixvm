@@ -1,2 +1,4 @@
 *.o
 assembler
+*.yacc.h
+*.yacc.output
