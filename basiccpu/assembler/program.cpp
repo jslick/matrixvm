@@ -1,9 +1,15 @@
-#include "program.h"
+#include "program.hpp"
 
 #include <sstream>
 #include <stdexcept>
+#include <cassert>
 
 using namespace std;
+
+MemAddress ImmediateValue::getAddress() const
+{
+    return this->instruction ? this->instruction->address : this->value;
+}
 
 Program::Program(const Isa& isa, int offset /* = 0 */)
 : isa(isa), offset(offset)
@@ -27,10 +33,15 @@ Instruction* Program::createInstruction(
 
 void Program::setSymbol(const string& symbolName, Instruction* instr)
 {
-    this->symbols[symbolName] = instr;
+    this->symbols[symbolName].instruction = instr;
 }
 
-const Instruction* Program::getInstructionAtLabel(const string& symbolName) const
+void Program::setSymbol(const std::string& symbolName, MemAddress value)
+{
+    this->symbols[symbolName].value = value;
+}
+
+const ImmediateValue& Program::getSymbol(const std::string& symbolName) const
 {
     try {
         return this->symbols.at(symbolName);
@@ -40,6 +51,24 @@ const Instruction* Program::getInstructionAtLabel(const string& symbolName) cons
         msg << "Label not found:  " << symbolName;
         throw runtime_error(msg.str());
     }
+}
+
+MemAddress Program::solveArgumentAddress(Argument* arg) const
+{
+    if (SymbolArgument* arg_sym = dynamic_cast<SymbolArgument*>( arg ))
+    {
+        return this->getSymbol(arg_sym->symbolName).getAddress();
+    }
+    else if (BinaryArgument* arg_bin = dynamic_cast<BinaryArgument*>( arg ))
+    {
+        return Program::binaryOperation(
+            arg_bin->op,
+            Program::solveArgumentAddress(arg_bin->arg1),
+            Program::solveArgumentAddress(arg_bin->arg2)
+            );
+    }
+    else
+        throw runtime_error("Invalid argument given to binary immediate value");
 }
 
 void Program::assemble(FILE* stream)

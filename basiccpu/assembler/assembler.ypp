@@ -1,0 +1,146 @@
+%{
+
+#include "assembler_util.hpp"
+#include "isa.hpp"
+#include "program.hpp"
+
+#include <stdio.h>
+#include <string.h>
+
+extern int yylineno;
+
+extern void yyerror(const char*);
+extern int yylex();
+
+extern Program program;
+
+%}
+
+%union {
+    const char*     id;
+    uint32_t        int32val;
+    Instruction*    instruction;
+    Argument*       arg;
+    Argument*       arg_list;
+}
+
+%type <instruction> instruction
+%type <id>          opcode   directive
+%type <arg>         instruction_arg   directive_arg
+%type <arg_list>    instruction_args   directive_args
+%type <arg>         immediate   immediate_expr   simple_expr
+%type <id>          register
+%type <id>          bin_op
+
+%token NEWLINE
+%token DB
+%token R1 R2
+%token JMP MOV MEMCPY WRITE HALT
+%token IMMEDIATE
+%token <id> ID
+%token <int32val> INTVAL
+%token DBLVAL FLTVAL
+%token <id> STRVAL
+%token CHARVAL
+
+%%
+
+program
+    : line program2                 { program.assemble(stdout); cleanupArgs(program); }
+    ;
+
+program2
+    : line program2
+    |
+    ;
+
+line
+    : label_dcl NEWLINE
+    | directive_stmt NEWLINE
+    | instruction NEWLINE
+    | NEWLINE
+    ;
+
+label_dcl
+    : ID ':'                        { addCurrentLabel($1); }
+    ;
+
+directive_stmt
+    : directive directive_args      { addDataInstruction($1, $2); }
+    ;
+
+directive
+    : DB                            { $$ = "db"; }
+    ;
+
+directive_args
+    : directive_arg                 { $$ = $1; }
+    | directive_args directive_arg  { $$ = appendArgument($1, $2); }
+    ;
+
+directive_arg
+    : INTVAL                        { $$ = new DataArgument(std::vector<uint8_t>(1, $1)); }
+    | STRVAL                        { $$ = new DataArgument(stringToVector($1, false /* don't ensure null */, false /* don't pad to align */)); }
+    ;
+
+instruction
+    : opcode instruction_args       { $$ = addInstruction($1, $2); }
+    | opcode                        { $$ = addInstruction($1); }
+    ;
+
+opcode
+    : JMP                           { $$ = "jmp"; }
+    | MOV                           { $$ = "mov"; }
+    | MEMCPY                        { $$ = "memcpy"; }
+    | WRITE                         { $$ = "write"; }
+    | HALT                          { $$ = "halt"; }
+    ;
+
+instruction_args
+    : instruction_arg                       { $$ = $1; }
+    | instruction_arg ',' instruction_args  { $$ = appendArgument($1, $3); }
+    ;
+
+instruction_arg
+    : register                      { $$ = new RegisterArgument($1); }
+    | immediate                     { $$ = $1; }
+    ;
+
+register
+    : R1                            { $$ = "r1"; }
+    | R2                            { $$ = "r2"; }
+    ;
+
+immediate
+    : immediate_expr                { $$ = $1; }
+    ;
+
+immediate_expr
+    : immediate_expr bin_op simple_expr { $$ = new BinaryArgument($2, $1, $3); }
+    | simple_expr                       { $$ = $1; }
+    ;
+
+simple_expr
+    : ID                            { $$ = new SymbolArgument($1); }
+    | INTVAL                        { $$ = new IntegerArgument($1); }
+    ;
+
+bin_op
+    : '-'                           { $$ = "-"; }
+    ;
+
+%%
+
+void yyerror(const char *str)
+{
+    fprintf(stderr,"error: %s\n",str);
+}
+
+int main()
+{
+    // TODO:  use defines to un-hardcode this
+    program.setSymbol("OUTPUT_DMA", 2);
+    program.setSymbol("OUTPORT", 1);
+
+    return yyparse();
+}

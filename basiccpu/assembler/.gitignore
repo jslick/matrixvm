@@ -1,4 +1,6 @@
 *.o
 assembler
-*.yacc.h
+*.lex.cpp
+*.yacc.hpp
+*.yacc.cpp
 *.yacc.output

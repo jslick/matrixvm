@@ -111,6 +111,7 @@ void Motherboard::start()
     }
 
     int exeStart = this->exeStart <= 0 ? this->reservedSize : this->exeStart;
+    // align start point to instruction-length value
     int exeMod = exeStart % 4;
     if (exeMod)
         exeStart += (4 - exeMod);

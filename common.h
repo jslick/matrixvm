@@ -8,14 +8,18 @@
 #include <vector>
 
 // Config
-#define DEBUG       0
-#define CHECK_INSTR 1
+#ifndef DEBUG
+#  define DEBUG         0
+#endif
+#ifndef CHECK_INSTR
+#  define CHECK_INSTR   1
+#endif
 
 // shared library declaration
 #ifdef __cplusplus
-#define SLDECL extern "C"
+#  define SLDECL extern "C"
 #else
-#define SLDECL
+#  define SLDECL
 #endif  // __cplusplus
 
 typedef int32_t MemAddress;

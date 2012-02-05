@@ -1,14 +1,15 @@
 %{
 
-#include "assembler.yacc.h"
+#include "program.hpp"
+#include "assembler.yacc.hpp"
 
-#include <stdio.h>
-
-#ifndef NDEBUG
+#ifdef DEBUG_LEX
 #    define DEBUGF(...) printf(__VA_ARGS__)
 #else
 #    define DEBUGF(...)
 #endif
+
+#include <stdio.h>
 
 %}
 
@@ -96,16 +97,6 @@ char        \'\\?[^']\'
     /* Generic */
 %}
 
-%{
-    /*
-"#"{ident} {
-    DEBUGF("IMMEDIATE\n");
-    yylval.id = strdup(yytext+1);
-    return IMMEDIATE;
-}
-    */
-%}
-
 {ident} {
     DEBUGF("ID\n");
     yylval.id = strdup(yytext);
@@ -114,16 +105,19 @@ char        \'\\?[^']\'
 
 "0x"{hexdigit}+ {
     DEBUGF("INTVAL\n");
+    yylval.int32val = static_cast<uint32_t>( strtoul(yytext+2, 0, 16) );
     return INTVAL;
 }
 
 "0"{octdigit}* {
     DEBUGF("INTVAL\n");
+    yylval.int32val = static_cast<uint32_t>( strtoul(yytext+1, 0, 8) );
     return INTVAL;
 }
 
 [1-9]{digit}* {
     DEBUGF("INTVAL\n");
+    yylval.int32val = static_cast<uint32_t>( strtoul(yytext, 0, 10) );
     return INTVAL;
 }
 
@@ -139,6 +133,7 @@ char        \'\\?[^']\'
 
 {string} {
     DEBUGF("STRVAL\n");
+    yylval.id = strndup(yytext+1, strlen(yytext)-2);
     return STRVAL;
 }
 

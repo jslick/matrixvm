@@ -1,5 +1,5 @@
-#ifndef ISA_H
-#define ISA_H
+#ifndef ISA_HPP
+#define ISA_HPP
 
 #include <common.h>
 
@@ -29,4 +29,4 @@ public:
 
 };
 
-#endif // ISA_H
+#endif // ISA_HPP

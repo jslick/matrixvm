@@ -1,5 +1,5 @@
-#include "isa.h"
-#include "program.h"
+#include "isa.hpp"
+#include "program.hpp"
 #include "../opcodes.h"
 
 #include <sstream>
@@ -41,10 +41,10 @@ int Isa::calcInstructionSize(Instruction* instr)
     }
     else if (instruction == "db")
     {
-        if (instr->args.size() < 1)
+        if (!instr->args)
             throw runtime_error("db must have arguments");
 
-        DataArgument* data = dynamic_cast<DataArgument*>( instr->args[0] );
+        DataArgument* data = dynamic_cast<DataArgument*>( instr->args );
         assert(data);
         int size = data->data.size();
         int sizeMod = size % 4;
@@ -83,14 +83,17 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     const string& instruction = instr->instruction;
     if (instruction == "jmp")
     {
-        if (instr->args.size() < 1)
+        if (!instr->args)
             throw runtime_error("jmp must have a destination");
 
-        SymbolArgument* destSymbol = dynamic_cast<SymbolArgument*>( instr->args[0] );
-        const Instruction* destInstr = program.getInstructionAtLabel(destSymbol->symbolName);
-        assert(destInstr);
+        SymbolArgument* destSymbol = dynamic_cast<SymbolArgument*>( instr->args );
+        // TODO:  support other types (like integers)
+        if (!destSymbol)
+            throw runtime_error("First argument of jmp must be a symbol");
 
-        MemAddress diff = destInstr->address - instr->address;
+        const MemAddress& destAddress = program.getSymbol(destSymbol->symbolName).getAddress();
+
+        MemAddress diff = destAddress - instr->address;
         if (diff > 0xFFFF || diff < -0xFFFF)
             throw runtime_error("jmp out of range");
 
@@ -98,10 +101,10 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     }
     else if (instruction == "db")   // not really part of the isa, but that's okay
     {
-        if (instr->args.size() < 1)
+        if (!instr->args)
             throw runtime_error("db must have arguments");
 
-        DataArgument* data = dynamic_cast<DataArgument*>( instr->args[0] );
+        DataArgument* data = dynamic_cast<DataArgument*>( instr->args );
         assert(data);
         const vector<uint8_t>& value = data->data;
         for (unsigned int i = 0; i < value.size(); i += 4)
@@ -115,79 +118,65 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     }
     else if (instruction == "mov")
     {
-        if (instr->args.size() < 2)
+        RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args );
+        if (!regArg)
+            throw runtime_error("First argument of mov must be a register");
+        else if (!regArg->next)
             throw runtime_error("mov requires 2 arguments");
 
-        RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args[0] );
         const string& reg = regArg->reg;
-        MemAddress instruction = reg == "r1" ? R1 :
-                                 reg == "r2" ? R2 : 0;
-        if (!instruction)
+        MemAddress regBits = reg == "r1" ? R1 :
+                             reg == "r2" ? R2 : 0;
+        if (!regBits)
         {
             stringstream msg;
             msg << "Invalid register given to `load`:  " << reg;
             throw runtime_error(msg.str());
         }
-        instruction |= MOV | modeEnumToConstant(instr->addrMode);
-        generated.push_back(instruction);
-
-        MemAddress srcInstructionMem;
-
-        if (SymbolArgument* arg_sym = dynamic_cast<SymbolArgument*>( instr->args[1] ))
-        {
-            const Instruction* operandIns = program.getInstructionAtLabel(arg_sym->symbolName);
-            assert(operandIns);
-            srcInstructionMem = operandIns->address;
-        }
-        else if (DifferenceArgument* arg_diff = dynamic_cast<DifferenceArgument*>( instr->args[1] ))
-        {
-            const Instruction* operandIns[2];
-            operandIns[0] = program.getInstructionAtLabel(arg_diff->symbols[0]);
-            operandIns[1] = program.getInstructionAtLabel(arg_diff->symbols[1]);
-            assert(operandIns[0]);
-            assert(operandIns[1]);
-
-            srcInstructionMem = operandIns[0]->address - operandIns[1]->address;
-        }
-        else
-        {
-            assert(false /* not yet implemented */);
-        }
-
-        generated.push_back(srcInstructionMem);
+        generated.push_back(regBits | MOV | IMMEDIATE);
+        generated.push_back(program.solveArgumentAddress(regArg->next));
     }
     else if (instruction == "memcpy")
     {
-        if (instr->args.size() < 1)
+        if (!instr->args)
             throw runtime_error("memcpy requires 1 argument");
 
-        generated.push_back(MEMCPY | modeEnumToConstant(instr->addrMode));
-
-        MemAddress destAddress = 0;
-
-        if (DataArgument* arg_data = dynamic_cast<DataArgument*>( instr->args[0] ))
-        {
-            destAddress = fourCharsToAddress(arg_data->data);
-        }
-        else
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr->args ))
         {
             assert(false /* not yet implemented */);
         }
-        generated.push_back(destAddress);
+        else
+        {
+            generated.push_back(MEMCPY | IMMEDIATE);
+            generated.push_back(program.solveArgumentAddress(instr->args));
+        }
     }
     else if (instruction == "write")
     {
-        if (instr->args.size() < 2)
+        if (!instr->args || !instr->args->next)
             throw runtime_error("write requires 2 arguments");
 
-        DataArgument* portArg = dynamic_cast<DataArgument*>( instr->args[0] );
-        assert(portArg);
-        vector<uint8_t> writePort = portArg->data;
-        MemAddress opcode = WRITE | (writePort[0] << 8) | writePort[1];
-        generated.push_back(opcode);
+        // TODO:  support register as either argument, instead of just immediate values
 
-        DataArgument* whatArg = dynamic_cast<DataArgument*>( instr->args[1] );
-        generated.push_back(fourCharsToAddress(whatArg->data));
+        // Generate instruction
+        SymbolArgument* portArg = dynamic_cast<SymbolArgument*>( instr->args );
+        assert(portArg);
+
+        const ImmediateValue& imm = program.getSymbol(portArg->symbolName);
+        if (imm.instruction)
+            throw runtime_error("First argument of `write` cannot be a label");
+
+        MemAddress port = imm.value;
+        if (port > 0xFFFF)
+            throw runtime_error("The maximum port number given to `write` is 0xFFFF");
+
+        generated.push_back(WRITE | port);
+
+        // Generate the 'what` operand (32-bit)
+        // TODO:  support symbol as operand, instead of just integer
+        IntegerArgument* intArg = dynamic_cast<IntegerArgument*>( portArg->next );
+        assert(intArg);
+        generated.push_back(intArg->data);
     }
     else if (instruction == "halt")
     {
