@@ -42,6 +42,8 @@ isa.o:  isa.cpp isa.hpp
 %.yacc.cpp: %.ypp
 	$(YACC) $(YFLAGS) -d -o $@ $<
 
+assembler.yacc.hpp: assembler.yacc.cpp
+
 clean:
 	$(RM) *.o
 	$(RM) *.lex.cpp
