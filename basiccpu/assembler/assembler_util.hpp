@@ -4,6 +4,7 @@
 #include "program.hpp"
 
 #include <vector>
+#include <queue>
 
 /**
  * Create instruction
@@ -30,6 +31,15 @@ Instruction* addDataInstruction(const char* directive, Argument* dataArgs);
  * @param[in]   labelName
  */
 void addCurrentLabel(const std::string& labelName);
+
+/**
+ * Inventory a new heap-allocate Argument to delete later
+ * @param[in]   newArg  Newly-created, heap-allocated Argument
+ * @return  Param goes in, param goes out
+ * @note  The param Argument must only be freed in cleanupArgs(); no other
+ *        function should delete the Argument.
+ */
+Argument* inventoryArgument(Argument* newArg);
 
 /**
  * Append arg to list
@@ -68,6 +78,24 @@ std::vector<uint8_t> stringToVector(const char* str, bool ensureNull, bool ensur
  */
 std::vector<uint8_t> int32ToVector(uint32_t val);
 
-void cleanupArgs(const Program& program);
+/**
+ * Inventory a new heap-allocated string
+ * @param[in]   heapString  Newly-created, heap-allocated buffer
+ * @return  Param goes in, param goes out
+ * @note  The param string must only be freed in cleanupStrings(); no other
+ *        function should free the buffer.
+ * @note  The string does not have to be a c-string
+ */
+char* inventoryString(char* heapString);
+
+/**
+ * Free all inventoried heap-allocated strings
+ */
+void cleanupStrings();
+
+/**
+ * Delete all inventoried heap-allocated Arguments
+ */
+void cleanupArgs();
 
 #endif // ASSEMBLER_UTIL_HPP

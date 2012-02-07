@@ -2,6 +2,7 @@
 
 #include "program.hpp"
 #include "assembler.yacc.hpp"
+#include "assembler_util.hpp"
 
 #ifdef DEBUG_LEX
 #    define DEBUGF(...) printf(__VA_ARGS__)
@@ -99,7 +100,7 @@ char        \'\\?[^']\'
 
 {ident} {
     DEBUGF("ID\n");
-    yylval.id = strdup(yytext);
+    yylval.id = inventoryString(strdup(yytext));
     return ID;
 }
 
@@ -133,7 +134,10 @@ char        \'\\?[^']\'
 
 {string} {
     DEBUGF("STRVAL\n");
-    yylval.id = strndup(yytext+1, strlen(yytext)-2);
+    int idLen = strlen(yytext) - 2 /* don't include quotations */;
+    char* id = inventoryString(strndup(yytext+1, idLen + 1 /* null terminator */));
+    id[idLen] = 0;
+    yylval.id = id;
     return STRVAL;
 }
 

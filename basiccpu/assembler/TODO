@@ -1,5 +1,4 @@
-1. Plug memory leaks
-2. Add assembler directive 'defines' so that constants don't have to be
-   hardcoded in assembler.ypp
-3. See also TODOs noted in source code
-   * Some instructions should be able to accept more argument types
+* Add assembler directive 'defines' so that constants don't have to be
+  hardcoded in assembler.ypp
+* See also TODOs noted in source code
+  * Some instructions should be able to accept more argument types

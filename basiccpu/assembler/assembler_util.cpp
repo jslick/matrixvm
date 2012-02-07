@@ -1,5 +1,6 @@
 #include "assembler_util.hpp"
 
+#include <cstring>
 #include <queue>
 #include <stdexcept>
 #include <cassert>
@@ -8,6 +9,9 @@ using namespace std;
 
 Isa isa;
 Program program(isa, 1000 /* offset */);
+
+std::queue<char*> heapStrings;  // heap-allocated strings to free
+std::queue<Argument*> args;     // heap-allocated Arguments to delete
 
 // An address can have multiple labels.  Example:
 // mystring:
@@ -43,6 +47,12 @@ Instruction* addDataInstruction(const char* directive, Argument* dataArgs)
 void addCurrentLabel(const std::string& labelName)
 {
     currentLabels.push(labelName);
+}
+
+Argument* inventoryArgument(Argument* newArg)
+{
+    args.push(newArg);
+    return newArg;
 }
 
 Argument* appendArgument(Argument* list, Argument* arg)
@@ -119,7 +129,26 @@ std::vector<uint8_t> int32ToVector(uint32_t val)
     return rv;
 }
 
-void cleanupArgs(const Program& program)
+char* inventoryString(char* heapString)
 {
-    // TODO:  destroy heap-allocated Arguments
+    heapStrings.push(heapString);
+    return heapString;
+}
+
+void cleanupStrings()
+{
+    while (!heapStrings.empty())
+    {
+        free(heapStrings.front());
+        heapStrings.pop();
+    }
+}
+
+void cleanupArgs()
+{
+    while (!args.empty())
+    {
+        delete args.front();
+        args.pop();
+    }
 }
