@@ -1,0 +1,37 @@
+This project uses Git as its SCM.  Therefore, contribution is made with
+Git patches.  There are some rules for submitting patches:
+1. Each patch should accomplish its own task.  Try not to pork-barrel
+   multiple tasks into one commit.  A patch is small.
+2. Each patch should be compilable.  Do not create a patch that produces
+   compiler errors.
+3. Patch messages should expand tabs to 4 spaces, if applicable
+4. Patch message subjects should obey the 50 character limit rule.  The first
+   line of a commit message is its subject.  It shoud be brief, yet
+   informative.
+5. Patch message subjects should be in imperative sentence form.  This
+   is for consistency.
+6. Patch message bodies should obey the 72 character width rule.
+7. The .gitignore files are for project-specific files (like *.o files),
+   not for user-specific files (like Session.vim).  Use your global
+   .gitignore for user-specific files.
+
+See coding.txt for coding standards.  Inconsistent whitespace makes ugly code
+(especially since I have my editor set up to show it).  Don't do it.  Try to
+match the coding style of the surrounding code.  Inconsistent code is ugly.
+
+Do not check in personal settings files.  This project is IDE-agnostic.
+You may use whatever environment you wish to develop in, but do not
+check in your IDE settings files.
+
+Likewise, do not check in auto-generated files that depend on one user's
+preferences.  For example, Eclipse auto-generated Makefiles are a no-no
+(and generally a bad idea).
+
+Generally, don't check in binary files.
+
+Generally, check for memory errors using tools such as valgrind before making
+patches.
+
+Generally, try to use the same identification for all of your commits
+(e.g. Jason Eslick <jasoneslick@ku.edu>).  This isn't hard-and-fast, but helps
+identify people.

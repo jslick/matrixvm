@@ -1,0 +1,92 @@
+This project uses CMake for its build system.
+
+Build dependencies:
+ * cmake
+ * A C++ compiler
+     I've only tested with g++
+ * GNU make or mingw make
+     If you wish to build the basiccpu assembler
+ * Lex and Bison
+     If you wish to build the basiccpu assembler
+
+Runtime dependencies:
+ none
+
+Building the emulator
+---------------------
+From command line.  There are also GUI tools for CMake, but I don't have
+instructions for that.
+1. Make a build directory
+   I prefer to make the directory within the project root
+     mkdir build
+2. Change to the directory and invoke cmake with the first parameter being the
+   directory containing the CMakeLists.txt file you wish to build.
+     cd build
+     cmake ..   # I use .. because my build/ is within the project root
+     make -j
+It is built.
+
+Building the basiccpu assembler
+-------------------------------
+The assembler is not part of the cmake project; it uses a makefile.
+1. Change to assembler directory
+     cd basiccpu/assembler
+2. Build
+     make -j
+
+Assembling the hello world example
+----------------------------------
+Assuming you've built the assembler:
+1. Change to the basiccpu assembler
+     cd basiccpu/assembler
+2. Invoke the assembler
+     ./assembler < ./hello.s > ../bios
+
+Running the emulator
+--------------------
+You need a binary that the emulator can execute.  You can use the hello world
+example.  The emulator currently has a hard-coded method for running.  It looks
+for basiccpu/bios to execute.  So copy the assembled hello world binary to
+build_directory/basiccpu/bios.
+1. Change to the build directory
+     cd build
+2. Copy/move/symlink/whatev the binary to basiccpu/bios
+     cp ../basiccpu/bios basiccpu
+3. Run the emulator
+     ./matrixvm
+
+A complete script from scratch (in bash)
+----------------------------------------
+After cd-ing to the matrixvm root, you can copy/paste the following lines in
+bash
+# build the emulator
+[ ! -e build ] && mkdir build
+pushd build
+cmake ..
+make -j
+popd
+# build the assembler
+pushd basiccpu/assembler
+make -j
+./assembler < ./hello.s > ../bios
+popd
+# run the emulator
+pushd build
+[ ! -e basiccpu/bios ] && ln -s `pwd`/../basiccpu/bios basiccpu/bios
+./matrixvm
+popd
+
+You should see Hello World! output
+
+To cleanup:
+rm -rf build
+pushd basiccpu/assembler
+make clean
+popd
+rm basiccpu/bios
+
+Side commentary:
+    If you are not familiar with GNU make -j option, you should look it up;
+    it's pretty neat.  Normally, you should specify a number after -j.  With
+    large projects, omitting this number would make your computer cry; but this
+    project is currently small enough to make it okay.

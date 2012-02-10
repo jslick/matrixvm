@@ -1,0 +1,19 @@
+MatrixVM is a modular emulator.  CPUs are loaded at runtime from dynamically
+linked libraries.  Hardware devices are also loaded this way (or will be in the
+future).
+
+This emulator is [currently] an interpreter emulator (as opposed to using
+binary translation), and uses naive constructs to accomplish emulation.  As
+such, it would not be very efficient, and would not likely perform well.  The
+objective is to quickly invent new fictional architectures, some of which may
+never be practical to run on hardware.
+
+MatrixVM is meant to be cross-platform, but is not guaranteed to be so.
+
+See BUILDING for instructions on building the emulator.
+See CONTRIBUTING for developing.
+See coding.txt for coding standards (mostly formatting).  Inconsistent code is
+ugly code.
+
+There is an example CPU, called basiccpu.  The emulator is currently hard-coded
+to use this CPU.
