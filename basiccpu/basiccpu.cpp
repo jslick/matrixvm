@@ -21,6 +21,11 @@ inline MemAddress getInstruction(vector<uint8_t>& memory, MemAddress& ip)
            memory[ip-1] <<  0;
 }
 
+inline MemAddress getMode(MemAddress instruction)
+{
+    return instruction & (0x7 << INS_ADDR);
+}
+
 // declared, but not defined, in device.h
 SLDECL Device* createDevice()
 {
@@ -39,13 +44,25 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     vector<uint8_t>& memory = Device::getMemory(mb);
 
     /* Loop variables */
-    int16_t instr_operand;  // an operand part of an instruction
-    MemAddress operand;     // a pointer-size operand following an instruction
+    MemAddress  instr_mode;     // mode of an instruction
+    int16_t     instr_operand;  // an operand part of an instruction
+    MemAddress  operand;        // a pointer-size operand following an instruction
+
+    // Initialize sp to last memory spot.  Stack grows down
+    sp = mb.getMemorySize() - 1;
+    if (sp % 4) // align sp
+        sp -= sp % 4;
 
     MemAddress dummyReg;
     vector<MemAddress*> registers(MAX_REGISTERS, &dummyReg);
-    registers[1] = &r1;
-    registers[2] = &r2;
+    registers[1]  = &r1;
+    registers[2]  = &r2;
+    registers[3]  = &r3;
+    registers[4]  = &r4;
+    registers[5]  = &r5;
+    registers[13] = &sp;
+    registers[14] = &lr;
+    registers[15] = &ip;
 
     bool halt = false;
     while (!halt && ip < static_cast<MemAddress>( memory.size() ) - 4)
@@ -54,6 +71,10 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         switch (instruction & INS_OPCODE_MASK)
         {
+        case CALL:
+            memory[sp -= 4] = lr;   // save current lr
+            lr = ip;                // save instruction pointer to link register
+            // fall through
         case JMP:
             instr_operand = instruction & 0xFFFF;
             #if CHECK_INSTR
@@ -65,8 +86,20 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             ip += instr_operand - 4;    // -4 compensates for increment
             break;
 
+        case RET:
+            ip = lr;            // return by restoring ip from lr
+            lr = memory[sp];    // restore previous lr
+            sp += 4;            // --^
+            break;
+
         case MOV:
-            *registers[EXTRACT_REG(instruction)] = getInstruction(memory, ip);
+            instr_mode = getMode(instruction);
+            if (instr_mode == IMMEDIATE)
+                *registers[EXTRACT_REG(instruction)] = getInstruction(memory, ip);
+            else if (instr_mode == REGISTER)
+                *registers[EXTRACT_REG(instruction)] = *registers[EXTRACT_SRC_REG(instruction)];
+            else
+                /* TODO:  generate instruction fault */;
             break;
 
         case WRITE:
@@ -96,6 +129,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
         printf("instr = 0x%08x\n", instruction);
         printf("r1    = 0x%08x\n", r1);
         printf("r2    = 0x%08x\n", r2);
+        printf("r3    = 0x%08x\n", r2);
+        printf("r4    = 0x%08x\n", r2);
+        printf("r5    = 0x%08x\n", r2);
+        printf("sp    = 0x%08x\n", static_cast<unsigned int>( sp ));
+        printf("lr    = 0x%08x\n", static_cast<unsigned int>( lr ));
         printf("ip    = 0x%08x\n\n", static_cast<unsigned int>( ip ));
         #endif
     }

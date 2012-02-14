@@ -20,15 +20,20 @@
 #define INS_REG_MASK ( 0xF << INS_REG )
 #define MAX_REGISTERS ( (INS_REG_MASK >> INS_REG) + 1 )
 #define EXTRACT_REG(instruction) ( (instruction & INS_REG_MASK) >> INS_REG )
+#define EXTRACT_SRC_REG(instruction) ( instruction & 0xF )
 #define R1  ( 1 << INS_REG )
 #define R2  ( 2 << INS_REG )
+#define R3  ( 3 << INS_REG )
+#define R4  ( 4 << INS_REG )
+#define R5  ( 5 << INS_REG )
 
 /* Addressing modes */
 #define INS_ADDR    17
 #define ABSOLUTE    ( 0 << INS_ADDR )
 #define RELATIVE    ( 1 << INS_ADDR )
 #define IMMEDIATE   ( 2 << INS_ADDR )
-#define INDIRECT    ( 3 << INS_ADDR )
+#define REGISTER    ( 3 << INS_ADDR )
+#define INDIRECT    ( 4 << INS_ADDR )
 
 /* Opcodes */
 
@@ -41,6 +46,9 @@
 // Control flow
 #define JMP     ( 0x10 << INS_OPCODE )
 #define LNGJMP  ( 0x11 << INS_OPCODE )
+#define CALL    ( 0x14 << INS_OPCODE )
+#define LNGCALL ( 0x15 << INS_OPCODE )
+#define RET     ( 0x16 << INS_OPCODE )
 
 // Move
 #define MOV     ( 0x20 << INS_OPCODE )

@@ -55,14 +55,21 @@ char        \'\\?[^']\'
     /* Registers */
 %}
 
-"r1" {
-    DEBUGF("R1\n");
-    return R1;
-}
-
-"r2" {
-    DEBUGF("R2\n");
-    return R2;
+"r"[1-5] {
+    DEBUGF("R%d\n", yytext[1]);
+    switch (yytext[1])
+    {
+    case '1':
+        return R1;
+    case '2':
+        return R2;
+    case '3':
+        return R3;
+    case '4':
+        return R4;
+    case '5':
+        return R5;
+    }
 }
 
 %{
@@ -72,6 +79,16 @@ char        \'\\?[^']\'
 "jmp" {
     DEBUGF("JMP\n");
     return JMP;
+}
+
+"call" {
+    DEBUGF("CALL\n");
+    return CALL;
+}
+
+"ret" {
+    DEBUGF("RET\n");
+    return RET;
 }
 
 "mov" {

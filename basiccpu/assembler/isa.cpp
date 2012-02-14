@@ -32,10 +32,28 @@ inline MemAddress fourCharsToAddress(const vector<uint8_t>& value)
     return value[0] << 24 | value[1] << 16 | value[2] << 8 | value[3] << 0;
 }
 
+inline MemAddress regStringToAddress(const string& regStr)
+{
+    return regStr == "r1" ? R1 :
+           regStr == "r2" ? R2 :
+           regStr == "r3" ? R3 :
+           regStr == "r4" ? R4 :
+           regStr == "r5" ? R5 :
+           0;
+}
+
 int Isa::calcInstructionSize(Instruction* instr)
 {
     const string& instruction = instr->instruction;
     if (instruction == "jmp")
+    {
+        return 4;
+    }
+    else if (instruction == "call")
+    {
+        return 4;
+    }
+    else if (instruction == "ret")
     {
         return 4;
     }
@@ -54,7 +72,10 @@ int Isa::calcInstructionSize(Instruction* instr)
     }
     else if (instruction == "mov")
     {
-        return 8;
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("mov requires 2 arguments");
+
+        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
     }
     else if (instruction == "memcpy")
     {
@@ -81,7 +102,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     vector<MemAddress> generated;
 
     const string& instruction = instr->instruction;
-    if (instruction == "jmp")
+    if (instruction == "jmp" || instruction == "call")
     {
         if (!instr->args)
             throw runtime_error("jmp must have a destination");
@@ -97,7 +118,12 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         if (diff > 0xFFFF || diff < -0xFFFF)
             throw runtime_error("jmp out of range");
 
-        generated.push_back(JMP | RELATIVE | diff);
+        uint16_t bitableDiff = static_cast<uint16_t>( diff );
+        generated.push_back((instruction == "jmp" ? JMP : CALL) | RELATIVE | bitableDiff);
+    }
+    else if (instruction == "ret")
+    {
+        generated.push_back(RET);
     }
     else if (instruction == "db")   // not really part of the isa, but that's okay
     {
@@ -125,16 +151,27 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             throw runtime_error("mov requires 2 arguments");
 
         const string& reg = regArg->reg;
-        MemAddress regBits = reg == "r1" ? R1 :
-                             reg == "r2" ? R2 : 0;
+        MemAddress regBits = regStringToAddress(reg);
         if (!regBits)
         {
             stringstream msg;
             msg << "Invalid register given to `load`:  " << reg;
             throw runtime_error(msg.str());
         }
-        generated.push_back(regBits | MOV | IMMEDIATE);
-        generated.push_back(program.solveArgumentAddress(regArg->next));
+
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( regArg->next ))
+        {
+            // The value returned by regStringToAddress is the register value
+            // if the register were a destination.  This register, however, is
+            // the source register, which is placed at bit 0.  So, we shift the result back
+            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
+            generated.push_back(regBits | MOV | REGISTER | srcRegArg);
+        }
+        else
+        {
+            generated.push_back(regBits | MOV | IMMEDIATE);
+            generated.push_back(program.solveArgumentAddress(regArg->next));
+        }
     }
     else if (instruction == "memcpy")
     {

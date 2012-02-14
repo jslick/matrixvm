@@ -12,7 +12,7 @@ CFLAGS:=$(CFLAGS) -I ../../
 CFLAGS:=$(CFLAGS) -DDEBUG=0
 # debug flags
 CFLAGS:=$(CFLAGS) -g3
-# warnigs
+# warnings
 CFLAGS:=$(CFLAGS) -Wall -Wno-unused-label -Wno-unused
 
 CPPFLAGS:=$(CFLAGS) -std=c++0x

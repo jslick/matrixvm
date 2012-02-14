@@ -34,6 +34,11 @@ private:
     // registers
     MemAddress r1;
     MemAddress r2;
+    MemAddress r3;
+    MemAddress r4;
+    MemAddress r5;
+    MemAddress sp;
+    MemAddress lr;
 };
 
 }   // namespace machine
