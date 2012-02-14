@@ -59,6 +59,10 @@ MemAddress Program::solveArgumentAddress(Argument* arg) const
     {
         return this->getSymbol(arg_sym->symbolName).getAddress();
     }
+    else if (IntegerArgument* arg_int = dynamic_cast<IntegerArgument*>( arg ))
+    {
+        return arg_int->data;
+    }
     else if (BinaryArgument* arg_bin = dynamic_cast<BinaryArgument*>( arg ))
     {
         return Program::binaryOperation(
