@@ -33,6 +33,8 @@ The assembler is not part of the cmake project; it uses a makefile.
      cd basiccpu/assembler
 2. Build
      make -j
+If this fails because a make target dependency could not be met, try again
+without the -j option.
 
 Assembling the hello world example
 ----------------------------------
@@ -77,6 +79,9 @@ pushd build
 popd
 
 You should see Hello World! output
+
+If this script fails because a make target dependency could not be met, try
+again without the -j option.
 
 To cleanup:
 rm -rf build
