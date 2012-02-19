@@ -8,7 +8,7 @@
 using namespace std;
 
 Isa isa;
-Program program(isa, 1000 /* offset */);
+Program program(isa, 7000000 /* offset */);
 
 std::queue<char*> heapStrings;  // heap-allocated strings to free
 std::queue<Argument*> args;     // heap-allocated Arguments to delete

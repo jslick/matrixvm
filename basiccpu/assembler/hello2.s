@@ -1,25 +1,12 @@
 init:
     jmp     main    ; skip past data
 
-S1:
-    db      "Testing" 0x0a 0
-S1_LENGTH:
-S2:
-    db      "Calling draw_h" 0x0a 0
-S2_LENGTH:
-S3:
-    db      "In draw_h; and halting" 0x0a 0
-S3_LENGTH:
-
 main:
-    mov     r4, S1
-    mov     r5, S1_LENGTH-S1
-    call    print
-
-    mov     r4, S2
-    mov     r5, S2_LENGTH-S2
-    call    print
-    call    draw_h
+    mov     r4, 100
+    mov     r5,  50
+    mov     r6, 100
+    call    draw_horizontal
+    write   DISPLAY_PORT, 1 ; flush display
 
     halt
 
@@ -32,10 +19,30 @@ print:
     write   OUTPORT, 1  ; tell device to do its thing; 2nd operand is irrelevant for this particular device
     ret
 
-draw_h:
-    mov     r4, S3
-    mov     r5, S3_LENGTH-S3
-    call    print
+; r4 = left
+; r5 = top
+; r6 = length
+draw_vertical:
 
-    halt
-    ret     ; halt and then return, wth?
+    ret
+
+; r4 = top
+; r5 = left
+; r6 = length
+draw_horizontal:
+    ; set pixels from (top,left) to (top,left+length) to 0xFF0000
+
+    ; give to clrset these values:
+    ; r1 = DISPLAY_DMA + 3 * (top * width + left)
+    ; r2 = length
+    mov     r1, r4
+    mul     r1, 640
+    add     r1, r5
+    mul     r1, 3
+    add     r1, DISPLAY_DMA
+
+    mov     r2, r6
+
+    clrset  0xFF0000
+
+    ret

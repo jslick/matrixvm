@@ -42,6 +42,12 @@ public:
      */
     virtual void write(MemAddress what, int port) { }
 
+    /**
+     * Stop a thread
+     * @param[in]   thd     Thread to stop
+     */
+    virtual void stopThread(boost::thread* thd) { }
+
 protected:
 
     /**
@@ -49,6 +55,9 @@ protected:
      * @return Main memory from Motherboard
      */
     std::vector<uint8_t>& getMemory(Motherboard& mb) { return mb.getMemory(); }
+    // NOTE:  Because of the differences between POSIX dynamic linking and
+    //        Windows dynamic linking, with respect to the way they resolve
+    //        symbols, this prevents compilation on Windows
 
     /**
      * Request DMA memory from the Motherboard
@@ -98,11 +107,12 @@ protected:
 
 /**
  * Create an instance of the device
+ * @param[in]   args    Pointer to arguments, which are passed to the Device constructor
  * @return  The loaded device
  * @post    The calling function should delete the device.  The library does
  *          not delete the object.  The `new` and `delete` operators must *not*
  *          be overridden.
  */
-SLDECL machine::Device* createDevice();
+SLDECL machine::Device* createDevice(void* args);
 
 #endif // DEVICE_H

@@ -16,8 +16,6 @@
 // 8 bits for flags + 80 chars + 1 null char + 1 boundary char (to eliminate
 // costly manipulation)
 
-// TODO:  move this device outside of machine/ ??
-
 namespace machine
 {
 

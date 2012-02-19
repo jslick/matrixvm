@@ -4,13 +4,18 @@ Build dependencies:
  * cmake
  * A C++ compiler
      I've only tested with g++
+ * boost-thread 1.47
+ * libx11-dev
+     To use X11 display device
  * GNU make or mingw make
      If you wish to build the basiccpu assembler
  * Lex and Bison
      If you wish to build the basiccpu assembler
 
 Runtime dependencies:
- none
+ * Boost Thread (libboost-thread)
+ * X11 server
+     To use the X11 display device
 
 Building the emulator
 ---------------------

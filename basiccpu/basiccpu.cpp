@@ -36,7 +36,7 @@ const char* modeToString(MemAddress mode)
 #endif
 
 // declared, but not defined, in device.h
-SLDECL Device* createDevice()
+SLDECL Device* createDevice(void* args)
 {
     return new BasicCpu;
 }
@@ -142,6 +142,17 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
             break;
 
+        case CLRSET:
+            instr_mode = getMode(instruction);
+            if (instr_mode == IMMEDIATE)
+                this->colorset(memory, getInstruction(memory, ip));
+            else if (instr_mode == REGISTER) // this mode is untested
+                this->colorset(memory, *registers[EXTRACT_SRC_REG(instruction)]);
+            else
+                /* TODO:  generate instruction fault */;
+            BCPU_DBGI("clrset", modeToString(instr_mode));
+            break;
+
         case HALT:
             BCPU_DBGI("halt", 0);
             halt = true;
@@ -205,5 +216,19 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
         printf("lr    = 0x%08x\n", static_cast<unsigned int>( lr ));
         printf("ip    = 0x%08x\n\n", static_cast<unsigned int>( ip ));
         #endif
+    }
+}
+
+void BasicCpu::colorset(std::vector<uint8_t>& memory, MemAddress what)
+{
+    uint8_t red   = (what & 0xFF0000) >> (4 * 4);
+    uint8_t green = (what & 0x00FF00) >> (2 * 4);
+    uint8_t blue  = (what & 0x0000FF) >> 0;
+
+    for (MemAddress i = r1; i < r1 + r2 * 3; i += 3)
+    {
+        memory[i+0] = red;
+        memory[i+1] = green;
+        memory[i+2] = blue;
     }
 }

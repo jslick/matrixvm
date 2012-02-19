@@ -103,6 +103,11 @@ char        \'\\?[^']\'
     return MEMCPY;
 }
 
+"clrset" {
+    DEBUGF("CLRSET\n");
+    return CLRSET;
+}
+
 "write" {
     DEBUGF("WRITE\n");
     return WRITE;

@@ -15,7 +15,7 @@
 using namespace std;
 using namespace machine;
 
-typedef Device* (*GetDeviceFunc)();
+typedef Device* (*GetDeviceFunc)(void* args);
 
 LinuxDlAdapter* LinuxDlAdapter::instance = 0;
 
@@ -33,7 +33,7 @@ LinuxDlAdapter::~LinuxDlAdapter()
     }
 }
 
-Device* LinuxDlAdapter::loadDevice(const string& libraryPath, Motherboard& mb)
+Device* LinuxDlAdapter::loadDevice(const string& libraryPath, Motherboard& mb, void* args)
 {
     LibHandle libHandle = this->getHandle(libraryPath);
 
@@ -45,7 +45,7 @@ Device* LinuxDlAdapter::loadDevice(const string& libraryPath, Motherboard& mb)
         throw std::runtime_error(msg.str());
     }
 
-    Device* dev = (*fn)();
+    Device* dev = (*fn)(args);
 
     return dev;
 }

@@ -62,6 +62,8 @@
 #define STOREW  ( 0x31 << INS_OPCODE )
 #define STOREB  ( 0x32 << INS_OPCODE )
 #define MEMCPY  ( 0x38 << INS_OPCODE )
+#define MEMSET  ( 0x39 << INS_OPCODE )  // NOTE:  not yet implemented
+#define CLRSET  ( 0x3a << INS_OPCODE )
 
 // I/O
 #define WRITE   ( 0x40 << INS_OPCODE )

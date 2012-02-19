@@ -42,7 +42,7 @@ public:
      * @note    The library at libraryPath must have the createDevice method
      *          with the proper function signature.
      */
-    machine::Device* loadDevice(const std::string& libraryPath, machine::Motherboard& mb);
+    machine::Device* loadDevice(const std::string& libraryPath, machine::Motherboard& mb, void* args);
 
 protected:
 

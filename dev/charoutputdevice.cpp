@@ -14,7 +14,7 @@ using namespace std;
 using namespace machine;
 
 // declared, but not defined, in device.h
-SLDECL Device* createDevice()
+SLDECL Device* createDevice(void* args)
 {
     return new CharOutputDevice;
 }

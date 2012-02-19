@@ -18,7 +18,8 @@ using namespace machine;
 /* public Motherboard */
 
 Motherboard::Motherboard()
-: memorySize(0), exeStart(0), masterCpu(0), reservedSize(1 /* reserve 0 */),
+: memorySize(0), started(false), aborted(false), exeStart(0), masterCpu(0),
+  reservedSize(1 /* reserve 0 */),
   reportCb(0)
 { }
 
@@ -84,7 +85,7 @@ void Motherboard::addDevice(Device* dev)
     this->devices.push_back(dev);
 }
 
-void Motherboard::start()
+bool Motherboard::start()
 {
     if (this->cpus.size() < 1)
         throw runtime_error("There are no CPUs to run on");
@@ -97,7 +98,13 @@ void Motherboard::start()
     // initialize memory
     this->memory = vector<uint8_t>(this->memorySize, 0);
 
-    // initialize each device
+    // Start reserved memory at address 4
+    this->reserveMemIO(3);
+
+    // Initialize each device
+    // This is serial so that there are no race conditions.  Guest code may
+    // rely on devices requesting particular DMA regions, which my be
+    // influenced by the order that a device is able to request DMA.
     for (vector<Device*>::size_type i = 0; i < this->devices.size(); ++i)
     {
         try
@@ -108,7 +115,25 @@ void Motherboard::start()
         {   // don't crash VM; just ignore device
             this->reportException(e);
         }
+
+        if (this->aborted)
+            break;
     }
+
+    if (this->aborted)
+    {
+        // TODO:  uninitialize devices
+        return false;
+    }
+
+    // Start device-requested threads
+    for (list<DeviceThread>::iterator iter = this->deviceThreads.begin();
+            iter != this->deviceThreads.end();
+            ++iter)
+    {
+        (*iter).thd = new boost::thread(&Motherboard::runThread, this, *iter);
+    }
+
 
     int exeStart = this->exeStart <= 0 ? this->reservedSize : this->exeStart;
     // align start point to instruction-length value
@@ -123,17 +148,70 @@ void Motherboard::start()
     try
     {
         // TODO:  thread it
+        this->started = true;
         masterCpu->start(*this, exeStart);
+
+        sleep(10);  // temporary, until interrupts and timers are implemented
     } catch (exception& e)
     {   // don't crash VM while other threads can be running
         this->reportException(e);
+    }
+
+    // Tell each thread to stop
+    for (list<DeviceThread>::iterator iter = this->deviceThreads.begin();
+         iter != this->deviceThreads.end();
+         ++iter)
+    {
+        (*iter).dev->stopThread((*iter).thd);
+    }
+
+    // join threads
+    for (list<DeviceThread>::iterator iter = this->deviceThreads.begin();
+         iter != this->deviceThreads.end();
+         ++iter)
+    {
+        if (boost::thread* thd = (*iter).thd)
+        {
+            thd->join();
+            delete thd;
+        }
+    }
+
+    return true;
+}
+
+void Motherboard::abort()
+{
+    if (this->started)
+    {
+        // I refuse
+    }
+    else
+    {
+        this->aborted = true;
     }
 }
 
 inline void Motherboard::reportException(exception& e)
 {
     if (this->reportCb)
-        reportCb(e);
+        reportCb(*this, e);
+}
+
+bool Motherboard::requestThread(Device* dev, DeviceCallFunc cb)
+{
+    if (!dev)
+        throw runtime_error("Cannot request device thread for null device");
+    if (!cb)
+        throw runtime_error("Cannot request device thread with null callback");
+
+    DeviceThread dt;
+    dt.dev = dev;
+    dt.cb  = cb;
+    dt.thd = 0;
+    this->deviceThreads.push_back(dt);
+
+    return true;
 }
 
 /* protected Motherboard */
@@ -187,4 +265,19 @@ void Motherboard::write(int port, MemAddress what)
     assert(dev);
 
     dev->write(what, port);
+}
+
+void Motherboard::runThread(Motherboard* mb, DeviceThread& dt)
+{
+    if (!dt.cb)
+        return;
+
+    try
+    {
+        (dt.cb)(dt.dev, *mb);
+    }
+    catch (exception& e)
+    {
+        mb->reportException(e);
+    }
 }

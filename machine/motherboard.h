@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <boost/thread.hpp>
 
 // minimum amount of memory (in bytes) required to run the machine
 #define MIN_MEMORY 1024
@@ -25,7 +26,8 @@ class Motherboard;
 class Device;
 class Cpu;
 
-typedef void (*ReportExceptionFunc)(std::exception& e);
+typedef void (*DeviceCallFunc)(Device* dev, Motherboard& mb);
+typedef void (*ReportExceptionFunc)(Motherboard& mb, std::exception& e);
 
 /**
  * Central class to the Matrix VM
@@ -95,8 +97,15 @@ public:
     /**
      * Start virtual machine
      * @sa setBios
+     * @return  true if emulator stopped normally, false if emulation was
+     *          aborted
      */
-    void start();
+    bool start();
+
+    /**
+     * Abort the emulator, tell devices to quit
+     */
+    void abort();
 
     /**
      * Report an exception to the report callback, if set
@@ -104,6 +113,18 @@ public:
      * @sa  Motherboard::setExceptionReport
      */
     inline void reportException(std::exception& e);
+
+    /**
+     * Request a thread
+     *
+     * All devices should request threads from the Motherboard instead of
+     * generating its own threads.  This way, all threads are within control of
+     * the Motherboard.
+     * @param[in]   dev     Device that requests a thread
+     * @param[in]   cb      Callback function to call to start the thread
+     * @return  True if the thread was granted
+     */
+    bool requestThread(Device* dev, DeviceCallFunc cb);
 
 protected:
 
@@ -150,11 +171,31 @@ protected:
      */
     void write(int port, MemAddress what);
 
+protected:
+
+    struct DeviceThread
+    {
+        Device*         dev;
+        DeviceCallFunc  cb;
+        boost::thread*  thd;
+    };
+
+    /**
+     * Entry to new thread
+     * @param[in]   mb  Motherboard
+     * @param[in]   dt  DeviceThread
+     */
+    static void runThread(Motherboard* mb, DeviceThread& dt);
+
 private:
 
     Motherboard(const Motherboard& mb) { }; /* copy not permitted */
 
     MemAddress memorySize;
+
+    bool started;                   //!< Whether or not a CPU has been started
+
+    bool aborted;
 
     std::vector<uint8_t> bios;      //!< Program to execute at boot
 
@@ -169,6 +210,8 @@ private:
     std::vector<uint8_t> memory;    //!< Main memory
 
     MemAddress reservedSize;        //!< Size of reserved memory (the front)
+
+    std::list<DeviceThread> deviceThreads;
 
     std::unordered_map<int,Device*> devicePorts;
 
