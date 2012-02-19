@@ -149,8 +149,10 @@ MemAddress Motherboard::reserveMemIO(MemAddress size)
     if (size <= 0)
         throw runtime_error("Cannot request non-positive memory");
 
-    if (this->memorySize - this->reservedSize < MIN_AVAIL_MEMORY)
+    if (this->memorySize - this->reservedSize - size < MIN_AVAIL_MEMORY)
+    {
         return -1;  // not enough mem
+    }
     else
     {
         this->reservedSize += size;
