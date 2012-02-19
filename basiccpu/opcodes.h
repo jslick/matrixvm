@@ -26,6 +26,7 @@
 #define R3  ( 3 << INS_REG )
 #define R4  ( 4 << INS_REG )
 #define R5  ( 5 << INS_REG )
+#define R6  ( 6 << INS_REG )
 
 /* Addressing modes */
 #define INS_ADDR    17
@@ -64,5 +65,10 @@
 
 // I/O
 #define WRITE   ( 0x40 << INS_OPCODE )
+
+// Math
+#define ADD     ( 0x50 << INS_OPCODE )
+#define MUL     ( 0x54 << INS_OPCODE )
+#define MULW    ( 0x55 << INS_OPCODE )
 
 #endif // OPCODES

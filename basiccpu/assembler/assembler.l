@@ -55,7 +55,7 @@ char        \'\\?[^']\'
     /* Registers */
 %}
 
-"r"[1-5] {
+"r"[1-6] {
     DEBUGF("R%d\n", yytext[1]);
     switch (yytext[1])
     {
@@ -69,6 +69,8 @@ char        \'\\?[^']\'
         return R4;
     case '5':
         return R5;
+    case '6':
+        return R6;
     }
 }
 
@@ -109,6 +111,21 @@ char        \'\\?[^']\'
 "halt" {
     DEBUGF("HALT\n");
     return HALT;
+}
+
+"add" {
+    DEBUGF("ADD\n");
+    return ADD;
+}
+
+"mulw" {
+    DEBUGF("MULW\n");
+    return MULW;
+}
+
+"mul" {
+    DEBUGF("MUL\n");
+    return MUL;
 }
 
 %{

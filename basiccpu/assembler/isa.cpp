@@ -39,6 +39,7 @@ inline MemAddress regStringToAddress(const string& regStr)
            regStr == "r3" ? R3 :
            regStr == "r4" ? R4 :
            regStr == "r5" ? R5 :
+           regStr == "r6" ? R6 :
            0;
 }
 
@@ -86,6 +87,18 @@ int Isa::calcInstructionSize(Instruction* instr)
         return 8;
     }
     else if (instruction == "halt")
+    {
+        return 4;
+    }
+    else if (instruction == "add")
+    {
+        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
+    }
+    else if (instruction == "mul")
+    {
+        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
+    }
+    else if (instruction == "mulw")
     {
         return 4;
     }
@@ -155,7 +168,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         if (!regBits)
         {
             stringstream msg;
-            msg << "Invalid register given to `load`:  " << reg;
+            msg << "Invalid register given to `mov`:  " << reg;
             throw runtime_error(msg.str());
         }
 
@@ -218,6 +231,86 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     else if (instruction == "halt")
     {
         generated.push_back(HALT);
+    }
+    else if (instruction == "add")
+    {
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("add requires 2 arguments");
+
+        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
+        if (!arg)
+            throw runtime_error("First argument of add must be the destination register");
+
+        const string& reg = arg->reg;
+        MemAddress regBits = regStringToAddress(reg);
+
+        Argument* operand = instr->args->next;
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( operand ))
+        {
+            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
+            generated.push_back(ADD | regBits | REGISTER | srcRegArg);
+        }
+        else if (SymbolArgument* reg_sym = dynamic_cast<SymbolArgument*>( operand ))
+        {
+            generated.push_back(ADD | regBits | IMMEDIATE);
+            generated.push_back(program.solveArgumentAddress(reg_sym));
+        }
+        else if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( operand ))
+        {
+            generated.push_back(ADD | regBits | IMMEDIATE);
+            generated.push_back(reg_int->data);
+        }
+        else
+        {
+            throw runtime_error("Invalid operand to add instruction");
+        }
+    }
+    else if (instruction == "mul")
+    {
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("mul requires 2 arguments");
+
+        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
+        if (!arg)
+            throw runtime_error("First argument of mul must be the destination register");
+
+        const string& reg = arg->reg;
+        MemAddress regBits = regStringToAddress(reg);
+
+        Argument* operand = instr->args->next;
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( operand ))
+        {
+            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
+            generated.push_back(MUL | regBits | REGISTER | srcRegArg);
+        }
+        else if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( operand ))
+        {
+            generated.push_back(MUL | regBits | IMMEDIATE);
+            generated.push_back(reg_int->data);
+        }
+        else
+        {
+            throw runtime_error("Invalid operand to mul instruction");
+        }
+    }
+    else if (instruction == "mulw")
+    {
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("mulw requires 2 arguments");
+
+        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
+        if (!arg)
+            throw runtime_error("First argument of mulw must be the destination register");
+
+        Argument* operand = instr->args->next;
+        if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( operand ))
+        {
+            generated.push_back(MULW | IMMEDIATE | reg_int->data);
+        }
+        else
+        {
+            throw runtime_error("Invalid operand to mulw instruction");
+        }
     }
     else
     {

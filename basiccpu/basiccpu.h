@@ -37,6 +37,7 @@ private:
     MemAddress r3;
     MemAddress r4;
     MemAddress r5;
+    MemAddress r6;
     MemAddress sp;
     MemAddress lr;
 };

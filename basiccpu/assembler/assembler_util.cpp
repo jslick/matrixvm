@@ -23,6 +23,10 @@ std::queue<std::string> currentLabels;
 
 Instruction* addInstruction(const char* opcode, Argument* args)
 {
+    #if DEBUG
+    printf("Instruction:  %s\n", opcode);
+    #endif
+
     Instruction* instr = program.createInstruction(opcode);
     instr->args = args;
 
@@ -46,6 +50,10 @@ Instruction* addDataInstruction(const char* directive, Argument* dataArgs)
 
 void addCurrentLabel(const std::string& labelName)
 {
+    #if DEBUG
+    printf("Label:  %s\n", labelName.c_str());
+    #endif
+
     currentLabels.push(labelName);
 }
 

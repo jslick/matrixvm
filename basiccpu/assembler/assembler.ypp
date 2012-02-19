@@ -34,8 +34,8 @@ extern Program program;
 
 %token NEWLINE
 %token DB
-%token R1 R2 R3 R4 R5
-%token JMP CALL RET MOV MEMCPY WRITE HALT
+%token R1 R2 R3 R4 R5 R6
+%token JMP CALL RET MOV MEMCPY WRITE HALT ADD MUL MULW
 %token IMMEDIATE
 %token <id> ID
 %token <int32val> INTVAL
@@ -96,6 +96,9 @@ opcode
     | MEMCPY                        { $$ = "memcpy"; }
     | WRITE                         { $$ = "write"; }
     | HALT                          { $$ = "halt"; }
+    | ADD                           { $$ = "add"; }
+    | MUL                           { $$ = "mul"; }
+    | MULW                          { $$ = "mulw"; }
     ;
 
 instruction_args
@@ -114,6 +117,7 @@ register
     | R3                            { $$ = "r3"; }
     | R4                            { $$ = "r4"; }
     | R5                            { $$ = "r5"; }
+    | R6                            { $$ = "r6"; }
     ;
 
 immediate
