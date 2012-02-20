@@ -108,6 +108,11 @@ char        \'\\?[^']\'
     return CLRSET;
 }
 
+"clrsetv" {
+    DEBUGF("CLRSETV\n");
+    return CLRSETV;
+}
+
 "write" {
     DEBUGF("WRITE\n");
     return WRITE;

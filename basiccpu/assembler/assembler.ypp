@@ -35,7 +35,7 @@ extern Program program;
 %token NEWLINE
 %token DB
 %token R1 R2 R3 R4 R5 R6
-%token JMP CALL RET MOV MEMCPY CLRSET WRITE HALT ADD MUL MULW
+%token JMP CALL RET MOV MEMCPY CLRSET CLRSETV WRITE HALT ADD MUL MULW
 %token IMMEDIATE
 %token <id> ID
 %token <int32val> INTVAL
@@ -95,6 +95,7 @@ opcode
     | MOV                           { $$ = "mov"; }
     | MEMCPY                        { $$ = "memcpy"; }
     | CLRSET                        { $$ = "clrset"; }
+    | CLRSETV                       { $$ = "clrsetv"; }
     | WRITE                         { $$ = "write"; }
     | HALT                          { $$ = "halt"; }
     | ADD                           { $$ = "add"; }
