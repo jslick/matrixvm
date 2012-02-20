@@ -170,16 +170,19 @@ void X11DisplayManager::eventListen()
 void X11DisplayManager::redraw()
 {
     vector<uint8_t>& memref = *this->memory;
-    for (int i = 0; i < 640; i++)
+
+    MemAddress addr = videoAddress;
+    for (int y = 0; y < 480; y++)
     {
-        for (int j = 0; j < 480; j++)
+        for (int x = 0; x < 640; x++)
         {
-            MemAddress addr = videoAddress + 3 * (640 * i + j);
             unsigned long color = memref[addr + 0] << 16 |
                                   memref[addr + 1] <<  8 |
                                   memref[addr + 2] <<  0;
             XSetForeground(this->display, this->gc, color);
-            XDrawPoint(this->display, this->win, this->gc, j, i);
+            XDrawPoint(this->display, this->win, this->gc, x, y);
+
+            addr += 3;
         }
 
         XFlush(this->display);

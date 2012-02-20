@@ -64,6 +64,7 @@
 #define MEMCPY  ( 0x38 << INS_OPCODE )
 #define MEMSET  ( 0x39 << INS_OPCODE )  // NOTE:  not yet implemented
 #define CLRSET  ( 0x3a << INS_OPCODE )
+#define CLRSETV ( 0x3b << INS_OPCODE )
 
 // I/O
 #define WRITE   ( 0x40 << INS_OPCODE )

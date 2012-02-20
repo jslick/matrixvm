@@ -33,6 +33,8 @@ protected:
 
     void colorset(std::vector<uint8_t>& memory, MemAddress what);
 
+    void colorsetVertical(std::vector<uint8_t>& memory, MemAddress what);
+
 private:
 
     // registers

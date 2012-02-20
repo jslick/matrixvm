@@ -26,6 +26,7 @@ $(EXE):  $(OBJS)
 	$(CPP) $(LFLAGS) $+ -o $@
 
 assembler.lex.o:  assembler.lex.cpp
+	[ -f assembler.yacc.hpp ] || ln -s assembler.yacc.h{,pp}
 	$(CPP) $(CPPFLAGS) -c $< -o $@
 assembler.yacc.o:  assembler.yacc.cpp assembler.yacc.hpp
 	$(CPP) $(CPPFLAGS) -c $< -o $@
@@ -41,6 +42,8 @@ isa.o:  isa.cpp isa.hpp
 
 %.yacc.cpp: %.ypp
 	$(YACC) $(YFLAGS) -d -o $@ $<
+
+assembler.lex.cpp:  assembler.yacc.hpp
 
 assembler.yacc.hpp: assembler.yacc.cpp
 

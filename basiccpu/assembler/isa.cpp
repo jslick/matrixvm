@@ -82,7 +82,7 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         return 8;
     }
-    else if (instruction == "clrset")
+    else if (instruction == "clrset" || instruction == "clrsetv")
     {
         return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
     }
@@ -218,6 +218,26 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         else if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( instr->args ))
         {
             generated.push_back(CLRSET | IMMEDIATE);
+            generated.push_back(reg_int->data);
+        }
+        else
+        {
+            throw runtime_error("Invalid argument to clrset instruction");
+        }
+    }
+    else if (instruction == "clrsetv")
+    {
+        if (!instr->args)
+            throw runtime_error("clrsetv requires 1 argument");
+
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr->args ))
+        {
+            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
+            generated.push_back(CLRSETV | REGISTER | srcRegArg);
+        }
+        else if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( instr->args ))
+        {
+            generated.push_back(CLRSETV | IMMEDIATE);
             generated.push_back(reg_int->data);
         }
         else
