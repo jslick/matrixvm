@@ -21,6 +21,11 @@ std::queue<Argument*> args;     // heap-allocated Arguments to delete
 //     ... code ...
 std::queue<std::string> currentLabels;
 
+void setSymbol(const char* symbolName, Argument* value)
+{
+    program.setSymbol(symbolName, program.solveArgumentAddress(value));
+}
+
 Instruction* addInstruction(const char* opcode, Argument* args)
 {
     #if DEBUG

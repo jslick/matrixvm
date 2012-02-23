@@ -1,6 +1,11 @@
 init:
     jmp     main    ; skip past data
 
+define DISPLAY_PORT 8
+define DISPLAY_DMA  4
+define OUTPUT_DMA   4 + 1920 * 1080 * 3 + 4 + 1
+define OUTPORT      1
+
 main:
     ; draw vertical at (50,25) to (50,175)
     mov     r4,  50

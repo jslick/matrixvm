@@ -31,7 +31,7 @@ Instruction* Program::createInstruction(
     return instr;
 }
 
-void Program::setSymbol(const string& symbolName, Instruction* instr)
+void Program::setSymbol(const std::string& symbolName, Instruction* instr)
 {
     this->symbols[symbolName].instruction = instr;
 }

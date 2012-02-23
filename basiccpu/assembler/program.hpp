@@ -9,6 +9,8 @@
 #include <sstream>
 #include <stdexcept>
 
+struct Argument;
+
 struct ImmediateValue
 {
     // only one of these two values shall be used
@@ -192,10 +194,12 @@ public:
         MemAddress          addr2
         )
     {
-        if (operation == "-")
-        {
+        if (operation == "+")
+            return addr1 + addr2;
+        else if (operation == "-")
             return addr1 - addr2;
-        }
+        else if (operation == "*")
+            return addr1 * addr2;
         else
         {
             std::stringstream msg;

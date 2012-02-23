@@ -32,7 +32,7 @@ char        \'\\?[^']\'
     /* Syntax */
 %}
 
-","|"-"|":" {
+","|"+"|"-"|"*"|":" {
     DEBUGF("%s\n", yytext);
     return yytext[0];
 }
@@ -49,6 +49,11 @@ char        \'\\?[^']\'
 "db" {
     DEBUGF("DB\n");
     return DB;
+}
+
+"define" {
+    DEBUGF("DEFINE\n");
+    return DEFINE;
 }
 
 %{

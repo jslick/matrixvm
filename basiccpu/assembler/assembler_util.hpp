@@ -7,6 +7,13 @@
 #include <queue>
 
 /**
+ * Set symbol to a value in the program
+ * @param   symbolName
+ * @param   value       This is evaluated, then stored as a MemAddress
+ */
+void setSymbol(const char* symbolName, Argument* value);
+
+/**
  * Create instruction
  * @param[in]   opcode
  * @param[in]   args    Linked list of Arguments included in the instruction
