@@ -47,7 +47,7 @@ Assuming you've built the assembler:
 1. Change to the basiccpu assembler
      cd basiccpu/assembler
 2. Invoke the assembler
-     ./assembler < ./hello.s > ../bios
+     ./assembler -o ../bios < ./hello.s
 
 Running the emulator
 --------------------
@@ -75,7 +75,7 @@ popd
 # build the assembler
 pushd basiccpu/assembler
 make -j
-./assembler < ./hello.s > ../bios
+./assembler -o ../bios < ./hello.s
 popd
 # run the emulator
 pushd build

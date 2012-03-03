@@ -6,6 +6,21 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <getopt.h>
+
+#define DEFAULT_OUTPUT_FILE "bcpu.bin"
+
+struct _options
+{
+    const char* outputFilename;
+    FILE*       outputFile;
+} options;
+
+void initOptions()
+{
+    options.outputFilename = DEFAULT_OUTPUT_FILE;
+    options.outputFile = 0;
+}
 
 extern int yylineno;
 
@@ -46,7 +61,10 @@ extern Program program;
 %%
 
 program
-    : line program2                 { program.assemble(stdout); cleanupArgs(); cleanupStrings(); }
+    : line program2                 {   program.assemble(options.outputFile);
+                                        cleanupArgs();
+                                        cleanupStrings();
+                                    }
     ;
 
 program2
@@ -145,7 +163,80 @@ void yyerror(const char *str)
     fprintf(stderr,"error: %s\n",str);
 }
 
-int main()
+void parseArgs(int argc, char** argv)
 {
-    return yyparse();
+    int c;
+
+    initOptions();
+
+    while (1)
+    {
+        static struct option long_options[] =
+        {
+            /* These options set a flag. */
+            /* These options don't set a flag.
+               We distinguish them by their indices. */
+            {"outfile",  required_argument, 0, 'o'},
+            {0, 0, 0, 0}
+        };
+        /* getopt_long stores the option index here. */
+        int option_index = 0;
+        c = getopt_long(argc, argv, "o:", long_options, &option_index);
+        /* Detect the end of the options. */
+        if (c < 0)
+            break;
+
+        switch (c)
+        {
+        case 0:
+            /* If this option set a flag, do nothing else now. */
+            if (long_options[option_index].flag != 0)
+                break;
+            printf("option %s", long_options[option_index].name);
+            if (optarg)
+                printf(" with arg %s", optarg);
+            printf("\n");
+            break;
+
+        case 'o':
+            options.outputFilename = optarg;
+            break;
+
+        default:
+            abort();
+        }
+    }
+
+    if (optind < argc)
+    {
+        /* remaining command line arguments (not options) */
+    }
+}
+
+int main(int argc, char** argv)
+{
+    parseArgs(argc, argv);
+
+    bool openedFile = false;
+    // init output file
+    if (options.outputFilename)
+    {
+        options.outputFile = fopen(options.outputFilename, "wb");
+        openedFile = true;
+        if (!options.outputFile)
+        {
+            fprintf(stderr, "Could not open '%s' for writing\n", options.outputFilename);
+            exit(2);
+        }
+    }
+    else if (!options.outputFile)
+        options.outputFile = stdout;
+
+    int rv = yyparse();
+
+    // cleanup
+    if (openedFile)
+        fclose(options.outputFile);
+
+    return rv;
 }
