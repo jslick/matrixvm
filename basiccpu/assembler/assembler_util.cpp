@@ -7,6 +7,8 @@
 
 using namespace std;
 
+Options options;
+
 Isa isa;
 Program program(isa, 7000000 /* offset */);
 
@@ -28,9 +30,8 @@ void setSymbol(const char* symbolName, Argument* value)
 
 Instruction* addInstruction(const char* opcode, Argument* args)
 {
-    #if DEBUG
-    printf("Instruction:  %s\n", opcode);
-    #endif
+    if (options.debugFlag)
+        printf("Instruction:  %s\n", opcode);
 
     Instruction* instr = program.createInstruction(opcode);
     instr->args = args;
@@ -55,9 +56,8 @@ Instruction* addDataInstruction(const char* directive, Argument* dataArgs)
 
 void addCurrentLabel(const std::string& labelName)
 {
-    #if DEBUG
-    printf("Label:  %s\n", labelName.c_str());
-    #endif
+    if (options.debugFlag)
+        printf("Label:  %s\n", labelName.c_str());
 
     currentLabels.push(labelName);
 }

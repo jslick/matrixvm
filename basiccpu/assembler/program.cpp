@@ -75,36 +75,34 @@ MemAddress Program::solveArgumentAddress(Argument* arg) const
         throw runtime_error("Invalid argument given to binary immediate value");
 }
 
-void Program::assemble(FILE* stream)
+void Program::assemble(FILE* stream, bool debug)
 {
     this->calcAddresses();  // first pass
 
     for (unsigned int i = 0; i < this->instructions.size(); i++)
     {
         Instruction* instr = this->instructions[i];
-        #if DEBUG
-        fprintf(stream, "%08x:  ", instr->address);
-        #endif
+        if (debug)
+            printf("%08x:  ", instr->address);
 
         vector<MemAddress> generated = this->isa.generateInstructions(*this, instr);
         for (unsigned int j = 0; j < generated.size(); j++)
         {
             MemAddress ins = generated[j];
-            #if DEBUG
-            if (j > 0)
-                fputc(' ', stream);
-            fprintf(stream, "0x%08x", ins);
-            #else
+            if (debug)
+            {
+                if (j > 0)
+                    putchar(' ');
+                printf("0x%08x", ins);
+            }
             // Writes in big-endian
             fputc((ins & 0xFF000000) >> 24, stream);
             fputc((ins & 0x00FF0000) >> 16, stream);
             fputc((ins & 0x0000FF00) >>  8, stream);
             fputc((ins & 0x000000FF) >>  0, stream);
-            #endif
         }
-        #if DEBUG
-        fputc('\n', stream);
-        #endif
+        if (debug)
+            putchar('\n');
     }
 }
 

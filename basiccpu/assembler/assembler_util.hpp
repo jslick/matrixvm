@@ -6,6 +6,19 @@
 #include <vector>
 #include <queue>
 
+#define DEFAULT_OUTPUT_FILE "bcpu.bin"
+
+struct Options
+{
+    const char* outputFilename;
+    FILE*       outputFile;
+    int         debugFlag;
+
+    Options()
+    : outputFilename(DEFAULT_OUTPUT_FILE), outputFile(0), debugFlag(0)
+    { }
+};
+
 /**
  * Set symbol to a value in the program
  * @param   symbolName

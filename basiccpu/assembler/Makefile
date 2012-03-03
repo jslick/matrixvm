@@ -8,8 +8,6 @@ YFLAGS=-t -v
 ## Compiler options
 # necessary options
 CFLAGS:=$(CFLAGS) -I ../../
-# compile time code options
-CFLAGS:=$(CFLAGS) -DDEBUG=0
 # debug flags
 CFLAGS:=$(CFLAGS) -g3
 # warnings

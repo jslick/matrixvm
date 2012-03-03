@@ -177,8 +177,10 @@ public:
     /**
      * Assemble the program, writing binary data to `stream`
      * @param[out]  stream  File to write the code to
+     * @param[in]   debug   Whether or not to print debug information about the
+     *                      generated instructions.
      */
-    void assemble(FILE* stream);
+    void assemble(FILE* stream, bool debug = false);
 
     /**
      * Calculate the memory address of a binary operation

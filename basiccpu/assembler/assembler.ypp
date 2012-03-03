@@ -8,25 +8,12 @@
 #include <string.h>
 #include <getopt.h>
 
-#define DEFAULT_OUTPUT_FILE "bcpu.bin"
-
-struct _options
-{
-    const char* outputFilename;
-    FILE*       outputFile;
-} options;
-
-void initOptions()
-{
-    options.outputFilename = DEFAULT_OUTPUT_FILE;
-    options.outputFile = 0;
-}
-
 extern int yylineno;
 
 extern void yyerror(const char*);
 extern int yylex();
 
+extern Options options;
 extern Program program;
 
 %}
@@ -61,7 +48,7 @@ extern Program program;
 %%
 
 program
-    : line program2                 {   program.assemble(options.outputFile);
+    : line program2                 {   program.assemble(options.outputFile, options.debugFlag);
                                         cleanupArgs();
                                         cleanupStrings();
                                     }
@@ -167,16 +154,15 @@ void parseArgs(int argc, char** argv)
 {
     int c;
 
-    initOptions();
-
     while (1)
     {
         static struct option long_options[] =
         {
             /* These options set a flag. */
+            {"debug",   no_argument,       &options.debugFlag, 1},
             /* These options don't set a flag.
                We distinguish them by their indices. */
-            {"outfile",  required_argument, 0, 'o'},
+            {"outfile", required_argument, 0, 'o'},
             {0, 0, 0, 0}
         };
         /* getopt_long stores the option index here. */
