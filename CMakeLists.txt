@@ -24,6 +24,7 @@ endif (HAVE_X11)
 add_executable( matrixvm
                 matrixvm.cpp
                 dev/x11displaymanager.cpp
+                dev/nulldisplaymanager.cpp
                 machine/dladapter.cpp
                 machine/motherboard.cpp
                 )

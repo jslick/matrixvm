@@ -3,12 +3,23 @@
 #include <machine/cpu.h>
 #include <dev/displaydevice.h>
 #include <dev/x11displaymanager.h>
+#include <dev/nulldisplaymanager.h>
 
+#include <getopt.h>
 #include <stdexcept>
 #include <cassert>
 
 using namespace std;
 using namespace machine;
+
+struct Options
+{
+    int graphics;
+
+    Options()
+    : graphics(1)
+    { }
+} options;
 
 void readFile(const char* filename, uint8_t*& contents, int& fileSize);
 
@@ -20,8 +31,54 @@ void motherboardException(Motherboard& mb, exception& e)
     mb.abort();
 }
 
-int main()
+void parseArgs(int argc, char** argv)
 {
+    int c;
+
+    while (1)
+    {
+        static struct option long_options[] =
+        {
+            /* These options set a flag. */
+            {"nographic",   no_argument,    &options.graphics, 0},
+            /* These options don't set a flag.
+               We distinguish them by their indices. */
+            {0, 0, 0, 0}
+        };
+        /* getopt_long stores the option index here. */
+        int option_index = 0;
+        c = getopt_long(argc, argv, "", long_options, &option_index);
+        /* Detect the end of the options. */
+        if (c < 0)
+            break;
+
+        switch (c)
+        {
+        case 0:
+            /* If this option set a flag, do nothing else now. */
+            if (long_options[option_index].flag != 0)
+                break;
+            printf("option %s", long_options[option_index].name);
+            if (optarg)
+                printf(" with arg %s", optarg);
+            printf("\n");
+            break;
+
+        default:
+            abort();
+        }
+    }
+
+    if (optind < argc)
+    {
+        /* remaining command line arguments (not options) */
+    }
+}
+
+int main(int argc, char** argv)
+{
+    parseArgs(argc, argv);
+
     const static int NUM_CPUS = 4;
 
     Motherboard* mb = new Motherboard;
@@ -46,7 +103,10 @@ int main()
 
     /* Initialize guest-to-host display output device */
     DisplayDeviceArgs ddargs;
-    ddargs.displayManager = new X11DisplayManager;
+    if (options.graphics)
+        ddargs.displayManager = new X11DisplayManager;
+    else
+        ddargs.displayManager = new NullDisplayManager;
     Device* displayDevice = dynamic_cast<Device*>(
         dlLoader->loadDevice("dev/" + DlAdapter::getLibraryName("displaydevice"), *mb, &ddargs)
         );
