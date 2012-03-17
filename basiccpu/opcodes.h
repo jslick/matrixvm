@@ -9,14 +9,14 @@
 
 /*
  * General instruction encoding
- * *---------------------------------------*
- * |  31-24 | 23-20 |  19-17 | 16-13 | ... |
- * | opcode |  cnd  | addrmd |  reg  | ... |
- * *---------------------------------------*
+ * *--------------------------------*
+ * |  31-24 |  23-21 | 20-17 | 15-0 |
+ * | opcode | addrmd |  reg  |  src |
+ * *--------------------------------*
  */
 
 /* Registers */
-#define INS_REG 13
+#define INS_REG 17
 #define INS_REG_MASK ( 0xF << INS_REG )
 #define MAX_REGISTERS ( (INS_REG_MASK >> INS_REG) + 1 )
 #define EXTRACT_REG(instruction) ( (instruction & INS_REG_MASK) >> INS_REG )
@@ -29,7 +29,7 @@
 #define R6  ( 6 << INS_REG )
 
 /* Addressing modes */
-#define INS_ADDR    17
+#define INS_ADDR    21
 #define ABSOLUTE    ( 0 << INS_ADDR )
 #define RELATIVE    ( 1 << INS_ADDR )
 #define IMMEDIATE   ( 2 << INS_ADDR )
