@@ -19,6 +19,7 @@ void X11DisplayManager::init(
     this->width  = width;
     this->height = height;
 
+    this->toFlush = true;
     this->toDestroy = false;
 
     this->display = 0;
@@ -33,11 +34,8 @@ void X11DisplayManager::show()
 
 void X11DisplayManager::flush()
 {
-    // display might not be started by the time guest code causes this flush
-    if (!this->display)
-        return;
-
-    this->redraw();
+    if (!this->toFlush)
+        this->toFlush = true;
 }
 
 void X11DisplayManager::destroy()
@@ -121,7 +119,7 @@ void X11DisplayManager::eventListen()
 
         // Set timer
         tv.tv_usec = 0;
-        tv.tv_sec = 2;
+        tv.tv_sec = 1;
 
         // Wait for X Event or a Timer
         if (select(x11_fd+1, &in_fds, 0, 0, &tv))
@@ -135,6 +133,13 @@ void X11DisplayManager::eventListen()
             {
                 this->closeWindow();
                 break;
+            }
+            else if (this->toFlush)
+            {
+                // This order is important, if guest code calls flush multiple times.
+                // If these were reversed, a flush could be missed.
+                this->toFlush = false;
+                this->redraw();
             }
         }
 

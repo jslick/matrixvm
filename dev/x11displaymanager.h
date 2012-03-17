@@ -41,6 +41,7 @@ private:
     int width;
     int height;
 
+    bool toFlush;   //<! Tells the event loop to flush display
     bool toDestroy; //<! Tells the event loop to quit and destroy window
 
     /* X variables */
