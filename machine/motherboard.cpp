@@ -155,12 +155,19 @@ bool Motherboard::start()
         this->reportException(e);
     }
 
+    printf("Stopping devices\n");
+
     // Tell each thread to stop
     for (list<DeviceThread>::iterator iter = this->deviceThreads.begin();
          iter != this->deviceThreads.end();
          ++iter)
     {
-        (*iter).dev->stopThread((*iter).thd);
+        DeviceThread& dt = *iter;
+        if (dt.thd)
+        {
+            assert(dt.dev);
+            dt.dev->stopThread(dt.thd);
+        }
     }
 
     // join threads
