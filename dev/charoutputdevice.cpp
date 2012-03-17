@@ -30,7 +30,7 @@ void CharOutputDevice::init(Motherboard& mb)
 {
     this->mb = &mb;
 
-    MemAddress dmaLoc = Device::reserveMemIO(mb, OUTDEV_BUFFER_SIZE);
+    MemAddress dmaLoc = Device::reserveMemIO(mb, *this, OUTDEV_BUFFER_SIZE);
     if (dmaLoc < 0)
         throw runtime_error("Could not request DMA memory for host stdout");
     else

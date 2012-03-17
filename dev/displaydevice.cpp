@@ -36,7 +36,7 @@ void DisplayDevice::init(Motherboard& mb)
     this->mb = &mb;
 
     /* Reserve display memory */
-    MemAddress dmaLoc = Device::reserveMemIO(mb, DISPLAY_BUFFER_SIZE);
+    MemAddress dmaLoc = Device::reserveMemIO(mb, *this, DISPLAY_BUFFER_SIZE);
     if (dmaLoc < 0)
         throw runtime_error("Could not request DMA memory for host display");
     else

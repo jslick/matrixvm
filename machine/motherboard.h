@@ -140,10 +140,11 @@ protected:
      *
      * This function may fail if there is not enough memory for the requested
      * size.  In this case, -1 is returned.
+     * @param[in] dev   Device that is reserving memory
      * @param[in] size  The size of memory needed for direct memory access
      * @return  The start address of the granted DMA memory, or -1 on failure
      */
-    MemAddress reserveMemIO(MemAddress size);
+    MemAddress reserveMemIO(Device& dev, MemAddress size);
 
     // TODO:  document
 

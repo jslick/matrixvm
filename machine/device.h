@@ -62,13 +62,14 @@ protected:
     /**
      * Request DMA memory from the Motherboard
      * @param[in] mb
+     * @param[in] dev   The device that is reserving memory
      * @param[in] size  Size of the requested DMA memory
      * @return  The start address of the requestd memory, or -1 on failure
      * @sa Motherboard::reserveMemIO
      */
-    MemAddress reserveMemIO(Motherboard& mb, MemAddress size)
+    MemAddress reserveMemIO(Motherboard& mb, Device& dev, MemAddress size)
     {
-        return mb.reserveMemIO(size);
+        return mb.reserveMemIO(dev, size);
     }
 
     /**

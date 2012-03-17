@@ -19,7 +19,7 @@ using namespace machine;
 
 Motherboard::Motherboard()
 : memorySize(0), started(false), aborted(false), exeStart(0), masterCpu(0),
-  reservedSize(1 /* reserve 0 */),
+  reservedSize(4 /* reserve 0 */),
   reportCb(0)
 { }
 
@@ -98,8 +98,6 @@ bool Motherboard::start()
     // initialize memory
     this->memory = vector<uint8_t>(this->memorySize, 0);
 
-    // Start reserved memory at address 4
-    this->reserveMemIO(3);
 
     // Initialize each device
     // This is serial so that there are no race conditions.  Guest code may
@@ -221,7 +219,7 @@ vector<uint8_t>& Motherboard::getMemory()
     return this->memory;
 }
 
-MemAddress Motherboard::reserveMemIO(MemAddress size)
+MemAddress Motherboard::reserveMemIO(Device& dev, MemAddress size)
 {
     assert(size > 0);
     if (size <= 0)
@@ -233,6 +231,10 @@ MemAddress Motherboard::reserveMemIO(MemAddress size)
     }
     else
     {
+        printf("Memory for %-32s:  0x%08x - 0x%08x\n",
+            dev.getName().c_str(),
+            this->reservedSize,
+            this->reservedSize + size - 1);
         this->reservedSize += size;
         return this->reservedSize - size;
     }
