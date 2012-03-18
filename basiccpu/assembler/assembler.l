@@ -128,6 +128,11 @@ char        \'\\?[^']\'
     return HALT;
 }
 
+"idle" {
+    DEBUGF("IDLE\n");
+    return IDLE;
+}
+
 "add" {
     DEBUGF("ADD\n");
     return ADD;

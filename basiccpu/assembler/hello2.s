@@ -12,21 +12,31 @@ main:
     mov     r5,  25
     mov     r6, 150
     call    draw_vertical
+    call    some_idle
 
     ; draw vertical at (150,25) to (150,175)
     mov     r4, 150
     mov     r5,  25
     mov     r6, 150
     call    draw_vertical
+    call    some_idle
 
     ; draw horizontal at (50,100) to (50+100,100)
     mov     r4,  50
     mov     r5, 100
     mov     r6, 100
     call    draw_horizontal
+    call    some_idle
     write   DISPLAY_PORT, 1 ; flush display
 
     halt
+
+some_idle:
+    idle
+    idle
+    idle
+    idle
+    ret
 
 ; r4 = address of string
 ; r5 = length of string

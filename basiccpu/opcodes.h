@@ -43,6 +43,7 @@
 
 // CPU modes/stuff
 #define HALT    ( 0x00 << INS_OPCODE )
+#define IDLE    ( 0x01 << INS_OPCODE )
 
 // Control flow
 #define JMP     ( 0x10 << INS_OPCODE )

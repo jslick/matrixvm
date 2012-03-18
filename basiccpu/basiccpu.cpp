@@ -62,6 +62,8 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     if (sp % 4) // align sp
         sp -= sp % 4;
 
+    dl = 100000;    // software cannot yet change this register
+
     MemAddress dummyReg;
     vector<MemAddress*> registers(MAX_REGISTERS, &dummyReg);
     registers[1]  = &r1;
@@ -167,6 +169,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
         case HALT:
             BCPU_DBGI("halt", 0);
             halt = true;
+            break;
+
+        case IDLE:
+            BCPU_DBGI("idle", 0);
+            usleep(dl);
             break;
 
         case ADD:

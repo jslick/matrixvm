@@ -46,6 +46,7 @@ private:
     MemAddress r6;
     MemAddress sp;
     MemAddress lr;
+    MemAddress dl; //<! delay register
 };
 
 }   // namespace machine

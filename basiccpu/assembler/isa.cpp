@@ -90,7 +90,7 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         return 8;
     }
-    else if (instruction == "halt")
+    else if (instruction == "halt" || instruction == "idle")
     {
         return 4;
     }
@@ -275,6 +275,10 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     else if (instruction == "halt")
     {
         generated.push_back(HALT);
+    }
+    else if (instruction == "idle")
+    {
+        generated.push_back(IDLE);
     }
     else if (instruction == "add")
     {
