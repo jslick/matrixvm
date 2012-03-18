@@ -2,6 +2,7 @@
 #include <machine/motherboard.h>
 #include <machine/cpu.h>
 #include <dev/basicinterruptcontroller.h>
+#include <dev/timerdevice.h>
 #include <dev/displaydevice.h>
 #include <dev/x11displaymanager.h>
 #include <dev/nulldisplaymanager.h>
@@ -103,6 +104,10 @@ int main(int argc, char** argv)
         else
             throw runtime_error("Could not load cpu device");
     }
+
+    /* Initialize interval timer */
+    TimerDevice* timer = new TimerDevice;
+    mb->addDevice(timer);
 
     /* Initialize guest-to-host display output device */
     DisplayDeviceArgs ddargs;

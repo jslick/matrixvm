@@ -160,8 +160,6 @@ protected:
      */
     MemAddress reserveMemIO(Device& dev, MemAddress size);
 
-    // TODO:  document
-
     /**
      * Obtain "hardware" port for a device
      *

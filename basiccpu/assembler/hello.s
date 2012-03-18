@@ -2,7 +2,7 @@ init:
     jmp     main    ; skip past data
 
 define OUTPUT_DMA   0x005eec88
-define OUTPORT      1
+define OUTPORT      2
 
 S1:
     db      0x01 "Hello World!" 0x0a 0

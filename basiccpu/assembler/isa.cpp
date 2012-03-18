@@ -382,10 +382,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         generated.push_back(WRITE | port);
 
         // Generate the 'what` operand (32-bit)
-        // TODO:  support symbol as operand, instead of just integer
-        IntegerArgument* intArg = dynamic_cast<IntegerArgument*>( portArg->next );
-        assert(intArg);
-        generated.push_back(intArg->data);
+        generated.push_back(program.solveArgumentAddress(portArg->next));
     }
     else if (instruction == "halt")
     {

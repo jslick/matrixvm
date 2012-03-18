@@ -186,8 +186,6 @@ bool Motherboard::start()
         this->started = true;
         sleep(1);
         masterCpu->start(*this, exeStart);
-
-        sleep(3);  // temporary, until interrupts and timers are implemented
     } catch (exception& e)
     {   // don't crash VM while other threads can be running
         this->reportException(e);

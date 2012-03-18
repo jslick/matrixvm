@@ -41,7 +41,7 @@ void CharOutputDevice::init(Motherboard& mb)
     vector<uint8_t>& memory = Device::getMemory(mb);
     memory[dmaLoc + OUTDEV_BUFFER_SIZE - 1] = 0;
 
-    if (!Device::requestPort(mb, this, 1))
+    if (!Device::requestPort(mb, this, 2))
         throw runtime_error("Could not initiate device port for host stdout");
 }
 

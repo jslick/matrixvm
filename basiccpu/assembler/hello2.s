@@ -4,7 +4,7 @@ init:
 define DISPLAY_PORT 8
 define DISPLAY_DMA  0x00000084
 define OUTPUT_DMA   0x005eec88 + 1
-define OUTPORT      1
+define OUTPORT      2
 define KEYBOARD_IRQ      0x00000008
 define KEYBOARD_DATA_PIN 0x8
 

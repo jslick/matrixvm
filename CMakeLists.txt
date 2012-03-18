@@ -21,18 +21,17 @@ if (HAVE_X11)
 endif (HAVE_X11)
 
 # build
-add_executable( matrixvm
-                matrixvm.cpp
-                dev/interruptcontroller.cpp
-                dev/basicinterruptcontroller.cpp
-                dev/x11displaymanager.cpp
-                dev/nulldisplaymanager.cpp
-                machine/dladapter.cpp
-                machine/motherboard.cpp
-                )
-target_link_libraries(matrixvm
-                      ${BOOST_THREAD}
-                      ${EXTRA_LIBS})
+add_executable(matrixvm
+        matrixvm.cpp
+        dev/interruptcontroller.cpp
+        dev/basicinterruptcontroller.cpp
+        dev/timerdevice.cpp
+        dev/x11displaymanager.cpp
+        dev/nulldisplaymanager.cpp
+        machine/dladapter.cpp
+        machine/motherboard.cpp
+        )
+target_link_libraries(matrixvm ${BOOST_THREAD} ${EXTRA_LIBS})
 
 add_subdirectory(basiccpu)
 add_subdirectory(dev)
