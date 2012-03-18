@@ -37,7 +37,7 @@ extern Program program;
 %token DB
 %token DEFINE
 %token R1 R2 R3 R4 R5 R6
-%token CMP JMP JE CALL RET STI RTI MOV MEMCPY CLRSET CLRSETV READ WRITE HALT IDLE ADD MUL MULW
+%token CMP JMP JE CALL RET STI RTI MOV STR MEMCPY CLRSET CLRSETV READ WRITE HALT IDLE ADD MUL MULW
 %token IMMEDIATE
 %token <id> ID
 %token <int32val> INTVAL
@@ -99,6 +99,7 @@ opcode
     | STI                           { $$ = "sti"; }
     | RTI                           { $$ = "rti"; }
     | MOV                           { $$ = "mov"; }
+    | STR                           { $$ = "str"; }
     | MEMCPY                        { $$ = "memcpy"; }
     | CLRSET                        { $$ = "clrset"; }
     | CLRSETV                       { $$ = "clrsetv"; }

@@ -124,6 +124,11 @@ char        \'\\?[^']\'
     return MOV;
 }
 
+"str" {
+    DEBUGF("STR\n");
+    return STR;
+}
+
 "memcpy" {
     DEBUGF("MEMCPY\n");
     return MEMCPY;

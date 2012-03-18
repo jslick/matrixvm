@@ -74,6 +74,23 @@ static inline void reljump(int16_t offset, MemAddress& ip)
 }
 
 /**
+ * Update memory with a 32-bit value
+ * @param[in,out]   memory
+ * @param[in]       location    Location to write to
+ * @param[in]       what        32-bit value to write to memory
+ */
+static inline void updateMemory32(
+        vector<uint8_t>& memory,
+        MemAddress location,
+        MemAddress what)
+{
+    memory[location + 0] = (what & 0xFF000000) >> 24;
+    memory[location + 1] = (what & 0x00FF0000) >> 16;
+    memory[location + 2] = (what & 0x0000FF00) >>  8;
+    memory[location + 3] = (what & 0x000000FF) >>  0;
+}
+
+/**
  * Extracts the addressing mode from the instruction
  * @param[in]   instruction
  * @return The mode, masked off from the instruction
@@ -111,12 +128,6 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     // Get location to interrupt vector
     InterruptController* ic = mb.getInterruptController();
     MemAddress icVector = ic ? ic->getInterruptVectorAddress() : -1;
-    // Hardcode keyboard interrupt address since we don't have store instruction yet
-    // handle_keyboard is at in hello2.s 0x006ad080
-    memory[icVector + 1 * 4 + 0] = 0x00;
-    memory[icVector + 1 * 4 + 1] = 0x6a;
-    memory[icVector + 1 * 4 + 2] = 0xD0;
-    memory[icVector + 1 * 4 + 3] = 0x80;
 
     // Initialize sp to last memory spot.  Stack grows down
     sp = mb.getMemorySize() - 1;
@@ -246,13 +257,24 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         case MOV:
             instr_mode = getMode(instruction);
+            BCPU_DBGI("mov", modeToString(instr_mode));
             if (instr_mode == IMMEDIATE)
                 *registers[EXTRACT_REG(instruction)] = getInstruction(memory, ip);
             else if (instr_mode == REGISTER)
                 *registers[EXTRACT_REG(instruction)] = *registers[EXTRACT_SRC_REG(instruction)];
             else
                 /* TODO:  generate instruction fault */;
-            BCPU_DBGI("mov", modeToString(instr_mode));
+            break;
+
+        case STR:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("str", modeToString(instr_mode));
+            if (instr_mode == IMMEDIATE)
+                updateMemory32(memory, *registers[EXTRACT_REG(instruction)], getInstruction(memory, ip));
+            else if (instr_mode == REGISTER)
+                updateMemory32(memory, *registers[EXTRACT_REG(instruction)], *registers[EXTRACT_SRC_REG(instruction)]);
+            else
+                /* TODO:  generate instruction fault */;
             break;
 
         case READ:

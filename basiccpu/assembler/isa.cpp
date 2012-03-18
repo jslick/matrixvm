@@ -85,6 +85,13 @@ int Isa::calcInstructionSize(Instruction* instr)
 
         return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
     }
+    else if (instruction == "str")
+    {
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("str requires 2 arguments");
+
+        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
+    }
     else if (instruction == "memcpy")
     {
         return 8;
@@ -237,6 +244,34 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         else
         {
             generated.push_back(regBits | MOV | IMMEDIATE);
+            generated.push_back(program.solveArgumentAddress(regArg->next));
+        }
+    }
+    else if (instruction == "str")
+    {
+        RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args );
+        if (!regArg)
+            throw runtime_error("First argument of str must be a register");
+        else if (!regArg->next)
+            throw runtime_error("str requires 2 arguments");
+
+        const string& reg = regArg->reg;
+        MemAddress regBits = regStringToAddress(reg);
+        if (!regBits)
+        {
+            stringstream msg;
+            msg << "Invalid register given to `str`:  " << reg;
+            throw runtime_error(msg.str());
+        }
+
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( regArg->next ))
+        {
+            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
+            generated.push_back(regBits | STR | REGISTER | srcRegArg);
+        }
+        else
+        {
+            generated.push_back(regBits | STR | IMMEDIATE);
             generated.push_back(program.solveArgumentAddress(regArg->next));
         }
     }

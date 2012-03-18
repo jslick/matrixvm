@@ -5,6 +5,7 @@ define DISPLAY_PORT 8
 define DISPLAY_DMA  0x00000084
 define OUTPUT_DMA   0x005eec88 + 1
 define OUTPORT      1
+define KEYBOARD_IRQ      0x00000008
 define KEYBOARD_DATA_PIN 0x8
 
 define KEY_Q    0x35
@@ -19,8 +20,9 @@ main:
     call    print
 
     ; set up keyboard interrupt
-    ; TODO after store instruction is implemented; for now the vector is
-    ;      hardcoded into the CPU.
+    mov     r1, KEYBOARD_IRQ
+    str     r1, handle_keyboard
+    ; ^-- memory[KEYBOARD_IRQ] = handle_keyboard
 
     sti ; enable interrupts
 

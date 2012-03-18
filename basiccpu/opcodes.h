@@ -73,9 +73,9 @@
 #define LOAD    ( 0x38 << INS_OPCODE )
 #define LOADW   ( 0x39 << INS_OPCODE )
 #define LOADB   ( 0x3a << INS_OPCODE )
-#define STORE   ( 0x40 << INS_OPCODE )
-#define STOREW  ( 0x41 << INS_OPCODE )
-#define STOREB  ( 0x42 << INS_OPCODE )
+#define STR     ( 0x40 << INS_OPCODE )
+#define STRD    ( 0x41 << INS_OPCODE )
+#define STRB    ( 0x42 << INS_OPCODE )
 #define MEMCPY  ( 0x48 << INS_OPCODE )
 #define MEMSET  ( 0x49 << INS_OPCODE )  // NOTE:  not yet implemented
 #define CLRSET  ( 0x4a << INS_OPCODE )
