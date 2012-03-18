@@ -108,11 +108,6 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 {
     vector<uint8_t>& memory = Device::getMemory(mb);
 
-    /* Loop variables */
-    MemAddress  instr_mode;     // mode of an instruction
-    int16_t     instr_operand;  // an operand part of an instruction
-    MemAddress  operand;        // a pointer-size operand following an instruction
-
     // Get location to interrupt vector
     InterruptController* ic = mb.getInterruptController();
     MemAddress icVector = ic ? ic->getInterruptVectorAddress() : -1;
@@ -155,6 +150,14 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     #define BCPU_DBGI(dbg_opcode, dbg_mode)
     #endif
 
+    /* Loop variables */
+    MemAddress  instr_mode;     // mode of an instruction
+    int16_t     instr_operand;  // an operand part of an instruction
+    MemAddress  operand;        // a pointer-size operand following an instruction
+    MemAddress  before;         // value before a calculation
+    MemAddress  result;         // value after  a calculation
+    MemAddress* dest_reg;       // destination register
+
     bool halt = false;
     while (!halt && ip < static_cast<MemAddress>( memory.size() ) - 4)
     {
@@ -190,26 +193,19 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
         {
         case CMP:
             instr_mode = getMode(instruction);
-            {
-                MemAddress op1 = *registers[EXTRACT_REG(instruction)];
-                MemAddress result;
-                if (instr_mode == IMMEDIATE)
-                    result = op1 - getInstruction(memory, ip);
-                else if (instr_mode == REGISTER)
-                    result = op1 - *registers[EXTRACT_SRC_REG(instruction)];
-                else
-                    /* TODO:  generate instruction fault */;
 
-                // Room for improvement:  delay this calculation until needed;
-                // then only calculate the bits that are needed.
-                st = st & 0xFFFFFF00;
-                if (result == 0)
-                    st |= STATUS_ZERO_MASK;
-                else if (result < 0)
-                    st |= STATUS_NEG_MASK;
-                if (result > op1)
-                    st |= STATUS_OVERFLOW_MASK;
-            }
+            before = *registers[EXTRACT_REG(instruction)];
+            if (instr_mode == IMMEDIATE)
+                result = before - getInstruction(memory, ip);
+            else if (instr_mode == REGISTER)
+                result = before - *registers[EXTRACT_SRC_REG(instruction)];
+            else
+                /* TODO:  generate instruction fault */;
+
+            // Room for improvement:  delay this calculation until needed;
+            // then only calculate the bits that are needed.
+            updateStatus(before, result);
+
             BCPU_DBGI("cmp", modeToString(instr_mode));
             break;
 
@@ -322,30 +318,45 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         case ADD:
             instr_mode = getMode(instruction);
+            BCPU_DBGI("add", modeToString(instr_mode));
+
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
             if (instr_mode == IMMEDIATE)
-                *registers[EXTRACT_REG(instruction)] += getInstruction(memory, ip);
+                result = *dest_reg += getInstruction(memory, ip);
             else if (instr_mode == REGISTER)
-                *registers[EXTRACT_REG(instruction)] += *registers[EXTRACT_SRC_REG(instruction)];
+                result = *dest_reg += *registers[EXTRACT_SRC_REG(instruction)];
             else
                 /* TODO:  generate instruction fault */;
-            BCPU_DBGI("add", modeToString(instr_mode));
+            updateStatus(before, result);
             break;
 
         case MUL:
             instr_mode = getMode(instruction);
+            BCPU_DBGI("mul", modeToString(instr_mode));
+
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
             if (instr_mode == IMMEDIATE)
-                *registers[EXTRACT_REG(instruction)] *= getInstruction(memory, ip);
+                result = *dest_reg *= getInstruction(memory, ip);
             else if (instr_mode == REGISTER)
-                *registers[EXTRACT_REG(instruction)] *= *registers[EXTRACT_SRC_REG(instruction)];
+                result = *dest_reg *= *registers[EXTRACT_SRC_REG(instruction)];
             else
                 /* TODO:  generate instruction fault */;
-            BCPU_DBGI("mul", modeToString(instr_mode));
+            updateStatus(before, result);
             break;
 
         case MULW:
             BCPU_DBGI("mulw", "immediate");
+
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
             instr_operand = instruction & 0xFFFF;
-            *registers[EXTRACT_REG(instruction)] *= instr_operand;
+            result = *dest_reg *= instr_operand;
+            updateStatus(before, result);
             break;
 
         default:
@@ -384,6 +395,17 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 void BasicCpu::interrupt(unsigned int line)
 {
     this->interrupts[line] = 1;
+}
+
+void BasicCpu::updateStatus(MemAddress before, MemAddress result)
+{
+    st = st & 0xFFFFFF00;
+    if (result == 0)
+        st |= STATUS_ZERO_MASK;
+    else if (result < 0)
+        st |= STATUS_NEG_MASK;
+    if (result > before)
+        st |= STATUS_OVERFLOW_MASK;
 }
 
 void BasicCpu::colorset(std::vector<uint8_t>& memory, MemAddress what)

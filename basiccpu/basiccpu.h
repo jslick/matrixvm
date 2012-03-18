@@ -42,6 +42,13 @@ protected:
         return this->st & STATUS_INTERRUPT_MASK ? true : false;
     }
 
+    /**
+     * Update status register with result of an operation
+     * @param[in]   before  Value of some register before operation
+     * @param[in]   result  Value of the same register after operation
+     */
+    void updateStatus(MemAddress before, MemAddress result);
+
     void colorset(std::vector<uint8_t>& memory, MemAddress what);
 
     void colorsetVertical(std::vector<uint8_t>& memory, MemAddress what);
