@@ -7,6 +7,8 @@ define OUTPUT_DMA   0x005eec88 + 1
 define OUTPORT      1
 define KEYBOARD_DATA_PIN 0x8
 
+define KEY_Q    0x35
+
 start_message:
     db      "Starting..." 0x0a 0
 start_message_end:
@@ -44,6 +46,7 @@ main:
     call    some_idle
     write   DISPLAY_PORT, 1 ; flush display
 
+main_exit:
     halt
 
 some_idle:
@@ -68,6 +71,9 @@ handle_keyboard:
 
     ; mask off keycode
     ; TODO
+
+    cmp     r4, KEY_Q
+    je      main_exit
 
     rti
 

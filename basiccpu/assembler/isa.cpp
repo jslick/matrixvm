@@ -8,7 +8,7 @@
 
 using namespace std;
 
-MemAddress modeEnumToConstant(Instruction::AddrMode mode)
+static MemAddress modeEnumToConstant(Instruction::AddrMode mode)
 {
     switch (mode)
     {
@@ -27,12 +27,12 @@ MemAddress modeEnumToConstant(Instruction::AddrMode mode)
     return 0;
 }
 
-inline MemAddress fourCharsToAddress(const vector<uint8_t>& value)
+static inline MemAddress fourCharsToAddress(const vector<uint8_t>& value)
 {
     return value[0] << 24 | value[1] << 16 | value[2] << 8 | value[3] << 0;
 }
 
-inline MemAddress regStringToAddress(const string& regStr)
+static inline MemAddress regStringToAddress(const string& regStr)
 {
     return regStr == "r1" ? R1 :
            regStr == "r2" ? R2 :
@@ -46,7 +46,14 @@ inline MemAddress regStringToAddress(const string& regStr)
 int Isa::calcInstructionSize(Instruction* instr)
 {
     const string& instruction = instr->instruction;
-    if (instruction == "jmp")
+    if (instruction == "cmp")
+    {
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("cmp requires 2 arguments");
+
+        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
+    }
+    else if (instruction == "jmp" || instruction == "je")
     {
         return 4;
     }
@@ -123,10 +130,36 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     vector<MemAddress> generated;
 
     const string& instruction = instr->instruction;
-    if (instruction == "jmp" || instruction == "call")
+    if (instruction == "cmp")
+    {
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("cmp requires 2 arguments");
+
+        RegisterArgument* destArg = dynamic_cast<RegisterArgument*>( instr->args );
+        const string& reg = destArg->reg;
+        MemAddress regBits = regStringToAddress(reg);
+        if (!destArg)
+            throw runtime_error("First argument must be a register");
+
+        if (RegisterArgument* reg_arg = dynamic_cast<RegisterArgument*>( instr->args->next ))
+        {
+            MemAddress srcRegArg = regStringToAddress(reg_arg->reg) >> INS_REG;
+            generated.push_back(CMP | regBits | REGISTER | srcRegArg);
+        }
+        else
+        {
+            generated.push_back(CMP | regBits | IMMEDIATE);
+            generated.push_back(program.solveArgumentAddress(instr->args->next));
+        }
+    }
+    else if (instruction == "jmp" || instruction == "je" || instruction == "call")
     {
         if (!instr->args)
-            throw runtime_error("jmp must have a destination");
+        {
+            stringstream msg;
+            msg << instruction << " must have a destination";
+            throw runtime_error(msg.str());
+        }
 
         SymbolArgument* destSymbol = dynamic_cast<SymbolArgument*>( instr->args );
         // TODO:  support other types (like integers)
@@ -140,7 +173,12 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             throw runtime_error("jmp out of range");
 
         uint16_t bitableDiff = static_cast<uint16_t>( diff );
-        generated.push_back((instruction == "jmp" ? JMP : CALL) | RELATIVE | bitableDiff);
+        MemAddress opcode = instruction == "jmp"  ? JMP :
+                            instruction == "je"   ? JE :
+                            instruction == "call" ? CALL :
+                            0;
+        assert(opcode /* don't forget to set `opcode` */);
+        generated.push_back(opcode | RELATIVE | bitableDiff);
     }
     else if (instruction == "ret")
     {

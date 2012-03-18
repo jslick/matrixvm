@@ -84,9 +84,19 @@ char        \'\\?[^']\'
     /* Opcodes */
 %}
 
+"cmp" {
+    DEBUGF("CMP\n");
+    return CMP;
+}
+
 "jmp" {
     DEBUGF("JMP\n");
     return JMP;
+}
+
+"je" {
+    DEBUGF("JE\n");
+    return JE;
 }
 
 "call" {

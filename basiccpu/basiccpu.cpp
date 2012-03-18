@@ -58,6 +58,22 @@ static inline MemAddress pop(vector<uint8_t>& memory, MemAddress& sp)
 }
 
 /**
+ * Do relative jump
+ * @param[in]       offset
+ * @param[in,out]   ip      Current instruction pointer
+ */
+static inline void reljump(int16_t offset, MemAddress& ip)
+{
+    #if CHECK_INSTR
+    if (offset % 4) {
+        fprintf(stderr, "0x%08x:  Invalid jump length:  0x%x\n", ip, offset);
+        exit(1);
+    }
+    #endif
+    ip += offset - 4;   // -4 compensates for increment
+}
+
+/**
  * Extracts the addressing mode from the instruction
  * @param[in]   instruction
  * @return The mode, masked off from the instruction
@@ -172,23 +188,49 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         switch (instruction & INS_OPCODE_MASK)
         {
+        case CMP:
+            instr_mode = getMode(instruction);
+            {
+                MemAddress op1 = *registers[EXTRACT_REG(instruction)];
+                MemAddress result;
+                if (instr_mode == IMMEDIATE)
+                    result = op1 - getInstruction(memory, ip);
+                else if (instr_mode == REGISTER)
+                    result = op1 - *registers[EXTRACT_SRC_REG(instruction)];
+                else
+                    /* TODO:  generate instruction fault */;
+
+                // Room for improvement:  delay this calculation until needed;
+                // then only calculate the bits that are needed.
+                st = st & 0xFFFFFF00;
+                if (result == 0)
+                    st |= STATUS_ZERO_MASK;
+                else if (result < 0)
+                    st |= STATUS_NEG_MASK;
+                if (result > op1)
+                    st |= STATUS_OVERFLOW_MASK;
+            }
+            BCPU_DBGI("cmp", modeToString(instr_mode));
+            break;
+
+        case JMP:
+            BCPU_DBGI("jmp", "relative");
+            reljump(instruction & 0xFFFF, ip);
+            break;
+
+        case JE:
+            BCPU_DBGI("je", "relative");
+            if (st & STATUS_ZERO_MASK)
+                reljump(instruction & 0xFFFF, ip);
+            break;
+
         case CALL:
             BCPU_DBGI("call", "relative");
             // save current lr
             push(memory, sp, lr);
             // save instruction pointer to link register
             lr = ip;
-            // fall through
-        case JMP:
-            instr_operand = instruction & 0xFFFF;
-            BCPU_DBGI("jmp", "relative");
-            #if CHECK_INSTR
-            if (instr_operand % 4) {
-                fprintf(stderr, "0x%08x:  Invalid jump length:  0x%x\n", ip, instr_operand);
-                exit(1);
-            }
-            #endif
-            ip += instr_operand - 4;    // -4 compensates for increment
+            reljump(instruction & 0xFFFF, ip);
             break;
 
         case RET:
