@@ -202,10 +202,6 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             else
                 /* TODO:  generate instruction fault */;
 
-            // Room for improvement:  delay this calculation until needed;
-            // then only calculate the bits that are needed.
-            updateStatus(before, result);
-
             BCPU_DBGI("cmp", modeToString(instr_mode));
             break;
 
@@ -216,7 +212,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         case JE:
             BCPU_DBGI("je", "relative");
-            if (st & STATUS_ZERO_MASK)
+            if (result == 0)
                 reljump(instruction & 0xFFFF, ip);
             break;
 
@@ -329,7 +325,6 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
                 result = *dest_reg += *registers[EXTRACT_SRC_REG(instruction)];
             else
                 /* TODO:  generate instruction fault */;
-            updateStatus(before, result);
             break;
 
         case MUL:
@@ -345,7 +340,6 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
                 result = *dest_reg *= *registers[EXTRACT_SRC_REG(instruction)];
             else
                 /* TODO:  generate instruction fault */;
-            updateStatus(before, result);
             break;
 
         case MULW:
@@ -356,7 +350,6 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
             instr_operand = instruction & 0xFFFF;
             result = *dest_reg *= instr_operand;
-            updateStatus(before, result);
             break;
 
         default:
