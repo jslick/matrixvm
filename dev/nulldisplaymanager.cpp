@@ -7,14 +7,16 @@
 using namespace std;
 
 void NullDisplayManager::init(
-    std::vector<uint8_t>&   memory,
-    MemAddress              videoAddress,
-    int                     width,
-    int                     height
+    std::vector<uint8_t>&           memory,
+    MemAddress                      videoAddress,
+    machine::InterruptController*   ic,
+    int                             width,
+    int                             height
     )
 {
     this->memory = &memory;
     this->videoAddress = videoAddress;
+    this->ic = ic;
 
     this->width  = width;
     this->height = height;

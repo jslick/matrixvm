@@ -7,6 +7,7 @@
 #include "motherboard.h"
 #include "cpu.h"
 #include "device.h"
+#include <dev/interruptcontroller.h>
 
 #include <sstream>
 #include <cassert>
@@ -18,7 +19,7 @@ using namespace machine;
 /* public Motherboard */
 
 Motherboard::Motherboard()
-: memorySize(0), started(false), aborted(false), exeStart(0), masterCpu(0),
+: memorySize(0), ic(0), started(false), aborted(false), exeStart(0), masterCpu(0),
   reservedSize(4 /* reserve 0 */),
   reportCb(0)
 { }
@@ -65,6 +66,16 @@ void Motherboard::setBios(vector<uint8_t>& program, MemAddress exeStart /* = 0 *
     this->exeStart = exeStart;
 }
 
+InterruptController* Motherboard::getInterruptController()
+{
+    return this->ic;
+}
+
+void Motherboard::setInterruptController(InterruptController* ic)
+{
+    this->ic = ic;
+}
+
 void Motherboard::addCpu(Cpu* cpu, bool master /* = false */)
 {
     assert(cpu);
@@ -74,6 +85,18 @@ void Motherboard::addCpu(Cpu* cpu, bool master /* = false */)
     this->cpus.push_back(cpu);
     if (master)
         this->masterCpu = this->cpus.size() - 1;
+}
+
+Cpu* Motherboard::getMasterCpu()
+{
+    try
+    {
+        return this->cpus.at(this->masterCpu);
+    }
+    catch (out_of_range& e)
+    {
+        return 0;
+    }
 }
 
 void Motherboard::addDevice(Device* dev)
@@ -98,8 +121,22 @@ bool Motherboard::start()
     // initialize memory
     this->memory = vector<uint8_t>(this->memorySize, 0);
 
+    /* Initialize each device */
+    // Initialize CPUs first
+    // TODO
 
-    // Initialize each device
+    // Initialize interrupt controller
+    if (this->ic) {
+        try
+        {
+            this->ic->init(*this);
+        }
+        catch (exception& e)
+        {   // don't crash VM
+            this->reportException(e);
+        }
+    }
+
     // This is serial so that there are no race conditions.  Guest code may
     // rely on devices requesting particular DMA regions, which my be
     // influenced by the order that a device is able to request DMA.
@@ -147,9 +184,10 @@ bool Motherboard::start()
     {
         // TODO:  thread it
         this->started = true;
+        sleep(1);
         masterCpu->start(*this, exeStart);
 
-        sleep(10);  // temporary, until interrupts and timers are implemented
+        sleep(3);  // temporary, until interrupts and timers are implemented
     } catch (exception& e)
     {   // don't crash VM while other threads can be running
         this->reportException(e);

@@ -23,6 +23,8 @@ endif (HAVE_X11)
 # build
 add_executable( matrixvm
                 matrixvm.cpp
+                dev/interruptcontroller.cpp
+                dev/basicinterruptcontroller.cpp
                 dev/x11displaymanager.cpp
                 dev/nulldisplaymanager.cpp
                 machine/dladapter.cpp

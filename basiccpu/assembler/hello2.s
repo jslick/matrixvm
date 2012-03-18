@@ -2,11 +2,26 @@ init:
     jmp     main    ; skip past data
 
 define DISPLAY_PORT 8
-define DISPLAY_DMA  4
-define OUTPUT_DMA   4 + 1920 * 1080 * 3 + 4 + 1
+define DISPLAY_DMA  0x00000084
+define OUTPUT_DMA   0x005eec88 + 1
 define OUTPORT      1
+define KEYBOARD_DATA_PIN 0x8
+
+start_message:
+    db      "Starting..." 0x0a 0
+start_message_end:
 
 main:
+    mov     r4, start_message
+    mov     r5, start_message_end - start_message
+    call    print
+
+    ; set up keyboard interrupt
+    ; TODO after store instruction is implemented; for now the vector is
+    ;      hardcoded into the CPU.
+
+    sti ; enable interrupts
+
     ; draw vertical at (50,25) to (50,175)
     mov     r4,  50
     mov     r5,  25
@@ -37,6 +52,24 @@ some_idle:
     idle
     idle
     ret
+
+handle_keyboard_data:
+    db      "handle_keyboard" 0x0a 0
+handle_keyboard:
+    mov     r4, handle_keyboard_data
+    mov     r5, handle_keyboard - handle_keyboard_data
+    call    print
+
+    ; get keyboard data
+    read    r4, KEYBOARD_DATA_PIN
+
+    ; mask off mode bit (press or release)
+    ; TODO
+
+    ; mask off keycode
+    ; TODO
+
+    rti
 
 ; r4 = address of string
 ; r5 = length of string

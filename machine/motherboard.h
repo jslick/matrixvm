@@ -25,6 +25,7 @@ namespace machine
 class Motherboard;
 class Device;
 class Cpu;
+class InterruptController;
 
 typedef void (*DeviceCallFunc)(Device* dev, Motherboard& mb);
 typedef void (*ReportExceptionFunc)(Motherboard& mb, std::exception& e);
@@ -78,6 +79,17 @@ public:
     void setBios(std::vector<uint8_t>& program, int exeStart = 0);
 
     /**
+     * @return The InterruptController, or null
+     */
+    InterruptController* getInterruptController();
+
+    /**
+     * Set the interrupt controller
+     * @param[in]   ic  The interrupt controller; can be null
+     */
+    void setInterruptController(InterruptController* ic);
+
+    /**
      * Add a CPU instance to the motherboard
      * @param[in]   cpu     CPU to add to the motherboard
      * @param[in]   master  Whether or not the Cpu is the master CPU
@@ -85,6 +97,8 @@ public:
      * @note    The Motherboard destructor will delete this Cpu.
      */
     void addCpu(Cpu* cpu, bool master = false);
+
+    Cpu* getMasterCpu();
 
     /**
      * Add device to Motherboard
@@ -193,6 +207,8 @@ private:
     Motherboard(const Motherboard& mb) { }; /* copy not permitted */
 
     MemAddress memorySize;
+
+    InterruptController* ic;
 
     bool started;                   //!< Whether or not a CPU has been started
 

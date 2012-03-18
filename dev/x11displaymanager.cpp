@@ -7,14 +7,16 @@
 using namespace std;
 
 void X11DisplayManager::init(
-    std::vector<uint8_t>&   memory,
-    MemAddress              videoAddress,
-    int                     width,
-    int                     height
+    std::vector<uint8_t>&           memory,
+    MemAddress                      videoAddress,
+    machine::InterruptController*   ic,
+    int                             width,
+    int                             height
     )
 {
     this->memory = &memory;
     this->videoAddress = videoAddress;
+    this->ic = ic;
 
     this->width  = width;
     this->height = height;
@@ -151,21 +153,24 @@ void X11DisplayManager::eventListen()
             if (event.type == Expose && event.xexpose.count == 0)
                 this->redraw();
 
-            if (event.type == KeyPress && XLookupString(&event.xkey, text, 255, &key, 0) == 1)
+            if (this->ic)
             {
-                if (text[0] == 'q')
+                bool keypress   = event.type == KeyPress;
+                bool keyrelease = event.type == KeyRelease;
+                if (keypress || keyrelease)
                 {
-                    this->closeWindow();
-                    break;
+                    // Set CPU pin
+                    this->ic->setPin(KEYBOARD_DATA_PIN, event.xkey.keycode | (keyrelease ? 0x100 : 0));
+
+                    // Interrupt
+                    this->ic->interrupt(KEYBOARD_INT_LINE);
                 }
-                printf("You pressed the %c key!\n", text[0]);
-                // TODO:  interrupt
-            }
-            if (event.type == ButtonPress)
-            {
-                //int x = event.xbutton.x,
-                //    y = event.xbutton.y;
-                // TODO:  interrupt
+                else if (event.type == ButtonPress)
+                {
+                    //int x = event.xbutton.x,
+                    //    y = event.xbutton.y;
+                    // TODO:  interrupt
+                }
             }
         }
     }

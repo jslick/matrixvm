@@ -2,6 +2,7 @@
 #define DISPLAYMANAGER_H
 
 #include <common.h>
+#include <dev/interruptcontroller.h>
 
 #include <vector>
 #include <cstdint>
@@ -14,14 +15,17 @@ public:
      * @param[in]   memory          Motherboard memory
      * @param[in]   videoAddress    Address in `memory` where video memory is
      *                              located
+     * @param[in]   ic              Interrupt controller to send keyboard
+     *                              events (or other events)
      * @param[in]   width           Display width
      * @param[in]   height          Display height
      */
     virtual void init(
-        std::vector<uint8_t>&   memory,
-        MemAddress              videoAddress,
-        int                     width,
-        int                     height
+        std::vector<uint8_t>&           memory,
+        MemAddress                      videoAddress,
+        machine::InterruptController*   ic,
+        int                             width,
+        int                             height
         ) = 0;
 
     /**

@@ -6,15 +6,20 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
+#define KEYBOARD_INT_LINE   1
+#define KEYBOARD_DATA_PIN 0x8
+// Allow 8 pins for timer interrupt
+
 class X11DisplayManager : public DisplayManager
 {
 public:
 
     void init(
-        std::vector<uint8_t>&   memory,
-        MemAddress              videoAddress,
-        int                     width,
-        int                     height
+        std::vector<uint8_t>&           memory,
+        MemAddress                      videoAddress,
+        machine::InterruptController*   ic,
+        int                             width,
+        int                             height
         );
 
     void show();
@@ -35,8 +40,9 @@ protected:
 
 private:
 
-    std::vector<uint8_t>*   memory;
-    MemAddress              videoAddress;
+    std::vector<uint8_t>*           memory;
+    MemAddress                      videoAddress;
+    machine::InterruptController*   ic;
 
     int width;
     int height;

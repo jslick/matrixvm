@@ -8,10 +8,11 @@ class NullDisplayManager : public DisplayManager
 public:
 
     void init(
-        std::vector<uint8_t>&   memory,
-        MemAddress              videoAddress,
-        int                     width,
-        int                     height
+        std::vector<uint8_t>&           memory,
+        MemAddress                      videoAddress,
+        machine::InterruptController*   ic,
+        int                             width,
+        int                             height
         );
 
     void show();
@@ -22,8 +23,9 @@ public:
 
 private:
 
-    std::vector<uint8_t>*   memory;
-    MemAddress              videoAddress;
+    std::vector<uint8_t>*           memory;
+    MemAddress                      videoAddress;
+    machine::InterruptController*   ic;
 
     int width;
     int height;

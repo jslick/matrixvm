@@ -1,7 +1,7 @@
 init:
     jmp     main    ; skip past data
 
-define OUTPUT_DMA   4 + 1920 * 1080 * 3 + 4 + 1
+define OUTPUT_DMA   0x005eec88
 define OUTPORT      1
 
 S1:

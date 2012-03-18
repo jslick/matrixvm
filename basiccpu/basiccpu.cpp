@@ -5,6 +5,7 @@
  */
 
 #include "basiccpu.h"
+#include <dev/basicinterruptcontroller.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,7 +13,12 @@
 using namespace std;
 using namespace machine;
 
-inline MemAddress getInstruction(vector<uint8_t>& memory, MemAddress& ip)
+SLDECL Device* createDevice(void* args)
+{
+    return new BasicCpu;
+}
+
+static inline MemAddress getInstruction(vector<uint8_t>& memory, MemAddress& ip)
 {
     ip += 4;
     return memory[ip-4] << 24 |
@@ -21,25 +27,59 @@ inline MemAddress getInstruction(vector<uint8_t>& memory, MemAddress& ip)
            memory[ip-1] <<  0;
 }
 
-inline MemAddress getMode(MemAddress instruction)
+/**
+ * Pushes `what` into the stack and updates the stack pointer
+ * @param[in,out]   memory
+ * @param[in,out]   sp      A reference to the stack pointer
+ * @param[in]       what    The value to push onto the stack
+ */
+static inline void push(vector<uint8_t>& memory, MemAddress& sp, MemAddress what)
+{
+    sp -= 4;
+    memory[sp + 0] = (what & 0xFF000000) >> 24;
+    memory[sp + 1] = (what & 0x00FF0000) >> 16;
+    memory[sp + 2] = (what & 0x0000FF00) >>  8;
+    memory[sp + 3] = (what & 0x000000FF) >>  0;
+}
+
+/**
+ * Pops a 32-bit value from the stack and updates the stack pointer
+ * @param[in,out]   memory
+ * @param[in,out]   sp      A reference to the stack pointer
+ * @return  The 32-bit value from the stack
+ */
+static inline MemAddress pop(vector<uint8_t>& memory, MemAddress& sp)
+{
+    sp += 4;
+    return memory[sp - 4] << 24 |
+           memory[sp - 3] << 16 |
+           memory[sp - 2] <<  8 |
+           memory[sp - 1] <<  0;
+}
+
+/**
+ * Extracts the addressing mode from the instruction
+ * @param[in]   instruction
+ * @return The mode, masked off from the instruction
+ */
+static inline MemAddress getMode(MemAddress instruction)
 {
     return instruction & (0x7 << INS_ADDR);
 }
 
 #if DEBUG
-const char* modeToString(MemAddress mode)
+/**
+ * Convert the mode from bits to human-readable string
+ * @param[in]   mode    Mode, encoded as part of an instruction
+ * @return  The string representation of the mode
+ */
+static const char* modeToString(MemAddress mode)
 {
     return mode == IMMEDIATE ? "immediate" :
            mode == REGISTER  ? "register"  :
            0;
 }
 #endif
-
-// declared, but not defined, in device.h
-SLDECL Device* createDevice(void* args)
-{
-    return new BasicCpu;
-}
 
 /* public BasicCpu */
 
@@ -57,11 +97,22 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     int16_t     instr_operand;  // an operand part of an instruction
     MemAddress  operand;        // a pointer-size operand following an instruction
 
+    // Get location to interrupt vector
+    InterruptController* ic = mb.getInterruptController();
+    MemAddress icVector = ic ? ic->getInterruptVectorAddress() : -1;
+    // Hardcode keyboard interrupt address since we don't have store instruction yet
+    // handle_keyboard is at in hello2.s 0x006ad080
+    memory[icVector + 1 * 4 + 0] = 0x00;
+    memory[icVector + 1 * 4 + 1] = 0x6a;
+    memory[icVector + 1 * 4 + 2] = 0xD0;
+    memory[icVector + 1 * 4 + 3] = 0x80;
+
     // Initialize sp to last memory spot.  Stack grows down
     sp = mb.getMemorySize() - 1;
     if (sp % 4) // align sp
         sp -= sp % 4;
 
+    st = 0;
     dl = 100000;    // software cannot yet change this register
 
     MemAddress dummyReg;
@@ -72,9 +123,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     registers[4]  = &r4;
     registers[5]  = &r5;
     registers[6]  = &r6;
-    registers[13] = &sp;
-    registers[14] = &lr;
-    registers[15] = &ip;
+    registers[11] = &sp;
+    registers[12] = &lr;
+    registers[13] = &ip;
+    registers[14] = &dl;
+    registers[15] = &st;
 
     #if DEBUG
     const char* str_opcode  = 0;
@@ -89,14 +142,42 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     bool halt = false;
     while (!halt && ip < static_cast<MemAddress>( memory.size() ) - 4)
     {
+        // Check for interrupts
+        if (this->interruptsEnabled() && this->interrupts.any())
+        {
+            for (size_t i = 0; i < this->interrupts.size(); i++)
+            {
+                if (this->interrupts.test(i))
+                {
+                    MemAddress handler = memory[icVector + i * 4 + 0] << 24 |
+                                         memory[icVector + i * 4 + 1] << 16 |
+                                         memory[icVector + i * 4 + 2] <<  8 |
+                                         memory[icVector + i * 4 + 3] <<  0;
+                    if (handler)
+                    {
+                        // save current ip
+                        push(memory, sp, ip);
+                        // set ip to value of interrupt vector
+                        ip = handler;
+                        // clear this interrupt line
+                        this->interrupts[i] = 0;
+
+                        break;
+                    }
+                }
+            }
+        }
+
         MemAddress instruction = getInstruction(memory, ip);
 
         switch (instruction & INS_OPCODE_MASK)
         {
         case CALL:
             BCPU_DBGI("call", "relative");
-            memory[sp -= 4] = lr;   // save current lr
-            lr = ip;                // save instruction pointer to link register
+            // save current lr
+            push(memory, sp, lr);
+            // save instruction pointer to link register
+            lr = ip;
             // fall through
         case JMP:
             instr_operand = instruction & 0xFFFF;
@@ -112,9 +193,21 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         case RET:
             BCPU_DBGI("ret", 0);
-            ip = lr;            // return by restoring ip from lr
-            lr = memory[sp];    // restore previous lr
-            sp += 4;            // --^
+            // return by restoring ip from lr
+            ip = lr;
+            // restore previous lr
+            lr = pop(memory, sp);
+            break;
+
+        case RTI:
+            BCPU_DBGI("rti", 0);
+            // restore ip
+            ip = pop(memory, sp);
+            break;
+
+        case STI:
+            BCPU_DBGI("sti", 0);
+            this->st |= STATUS_INTERRUPT_MASK;
             break;
 
         case MOV:
@@ -128,6 +221,15 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             BCPU_DBGI("mov", modeToString(instr_mode));
             break;
 
+        case READ:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("read", modeToString(instr_mode));
+            if (instr_mode == IMMEDIATE)
+                *registers[EXTRACT_REG(instruction)] = ic ? ic->getPin(instruction & 0xFFFF) : 0;
+            else
+                /* TODO: generate instruction fault */;
+            break;
+
         case WRITE:
             BCPU_DBGI("write", "immediate");
             instr_operand = instruction & 0xFFFF;
@@ -136,7 +238,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             break;
 
         case MEMCPY:
-            BCPU_DBGI("memcpu", "immediate");
+            BCPU_DBGI("memcpy", "immediate");
             operand = getInstruction(memory, ip);
             // copy r1 to operand, length r2
             for (uint32_t i = 0; i < static_cast<uint32_t>( r2 ); i++)
@@ -235,6 +337,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
         printf("ip    = 0x%08x\n\n", static_cast<unsigned int>( ip ));
         #endif
     }
+}
+
+void BasicCpu::interrupt(unsigned int line)
+{
+    this->interrupts[line] = 1;
 }
 
 void BasicCpu::colorset(std::vector<uint8_t>& memory, MemAddress what)

@@ -28,7 +28,7 @@ instructions for that.
    directory containing the CMakeLists.txt file you wish to build.
      cd build
      cmake ..   # I use .. because my build/ is within the project root
-     make -j
+     make -j4
 It is built.
 
 Building the basiccpu assembler

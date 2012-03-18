@@ -25,6 +25,8 @@ public:
      */
     virtual void start(Motherboard& mb, MemAddress addr) = 0;
 
+    virtual void interrupt(unsigned int line) = 0;
+
 };
 
 }   // namespace machine

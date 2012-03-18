@@ -1,6 +1,7 @@
 #include <machine/dladapter.h>
 #include <machine/motherboard.h>
 #include <machine/cpu.h>
+#include <dev/basicinterruptcontroller.h>
 #include <dev/displaydevice.h>
 #include <dev/x11displaymanager.h>
 #include <dev/nulldisplaymanager.h>
@@ -83,6 +84,8 @@ int main(int argc, char** argv)
 
     Motherboard* mb = new Motherboard;
     mb->setMemorySize(9 * 1024 * 1024);
+    InterruptController* ic = new BasicInterruptController(*mb);
+    mb->setInterruptController(ic);
     mb->setExceptionReport(motherboardException);
 
     /* Initialize dynamic library loader */
@@ -143,6 +146,7 @@ int main(int argc, char** argv)
     /* Cleanup */
     delete ddargs.displayManager;
     delete[] bios;
+    delete ic;
     delete mb;
     dlLoader->cleanup();
     return 0;

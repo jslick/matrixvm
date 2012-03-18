@@ -21,6 +21,7 @@ ident       [a-zA-Z][a-zA-Z0-9_]*
 digit       [0-9]
 hexdigit    [0-9a-fA-F]
 octdigit    [0-7]
+bindigit    [0-1]
 string      \"[^"]*\"
 char        \'\\?[^']\'
 
@@ -98,6 +99,16 @@ char        \'\\?[^']\'
     return RET;
 }
 
+"sti" {
+    DEBUGF("STI\n");
+    return STI;
+}
+
+"rti" {
+    DEBUGF("RTI\n");
+    return RTI;
+}
+
 "mov" {
     DEBUGF("MOV\n");
     return MOV;
@@ -116,6 +127,11 @@ char        \'\\?[^']\'
 "clrsetv" {
     DEBUGF("CLRSETV\n");
     return CLRSETV;
+}
+
+"read" {
+    DEBUGF("READ\n");
+    return READ;
 }
 
 "write" {
@@ -167,6 +183,12 @@ char        \'\\?[^']\'
 "0"{octdigit}* {
     DEBUGF("INTVAL\n");
     yylval.int32val = static_cast<uint32_t>( strtoul(yytext+1, 0, 8) );
+    return INTVAL;
+}
+
+"0b"{bindigit}* {
+    DEBUGF("INTVAL\n");
+    yylval.int32val = static_cast<uint32_t>( strtoul(yytext+2, 0, 2) );
     return INTVAL;
 }
 

@@ -50,7 +50,7 @@ void DisplayDevice::init(Motherboard& mb)
     if (this->display)
     {
         vector<uint8_t>& memory = Device::getMemory(mb);
-        this->display->init(memory, dmaLoc, 640, 480);
+        this->display->init(memory, dmaLoc, this->mb->getInterruptController(), 640, 480);
         mb.requestThread(this, &DisplayDevice::showDisplay);
     }
     else

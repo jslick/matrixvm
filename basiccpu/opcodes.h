@@ -28,6 +28,10 @@
 #define R5  ( 5 << INS_REG )
 #define R6  ( 6 << INS_REG )
 
+/* Status register */
+
+#define STATUS_INTERRUPT_MASK   0b10000000
+
 /* Addressing modes */
 #define INS_ADDR    21
 #define ABSOLUTE    ( 0 << INS_ADDR )
@@ -44,6 +48,8 @@
 // CPU modes/stuff
 #define HALT    ( 0x00 << INS_OPCODE )
 #define IDLE    ( 0x01 << INS_OPCODE )
+#define CLI     ( 0x03 << INS_OPCODE )
+#define STI     ( 0x04 << INS_OPCODE )
 
 // Control flow
 #define JMP     ( 0x10 << INS_OPCODE )
@@ -51,6 +57,7 @@
 #define CALL    ( 0x14 << INS_OPCODE )
 #define LNGCALL ( 0x15 << INS_OPCODE )
 #define RET     ( 0x16 << INS_OPCODE )
+#define RTI     ( 0x17 << INS_OPCODE )
 
 // Move
 #define MOV     ( 0x20 << INS_OPCODE )
@@ -68,7 +75,8 @@
 #define CLRSETV ( 0x3b << INS_OPCODE )
 
 // I/O
-#define WRITE   ( 0x40 << INS_OPCODE )
+#define READ    ( 0x40 << INS_OPCODE )
+#define WRITE   ( 0x41 << INS_OPCODE )
 
 // Math
 #define ADD     ( 0x50 << INS_OPCODE )

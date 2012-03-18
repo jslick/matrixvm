@@ -10,12 +10,16 @@
 #include "opcodes.h"
 #include <machine/cpu.h>
 
+#include <bitset>
+
 namespace machine
 {
 
 class BasicCpu : public Cpu
 {
 public:
+
+    static const uint16_t NUM_INTERRUPT_LINES = 32;
 
     /**
      * @return  Name of device
@@ -29,7 +33,14 @@ public:
      */
     void start(Motherboard& mb, MemAddress addr);
 
+    void interrupt(unsigned int line);
+
 protected:
+
+    inline bool interruptsEnabled() const
+    {
+        return this->st & STATUS_INTERRUPT_MASK ? true : false;
+    }
 
     void colorset(std::vector<uint8_t>& memory, MemAddress what);
 
@@ -46,7 +57,11 @@ private:
     MemAddress r6;
     MemAddress sp;
     MemAddress lr;
+    MemAddress st;
     MemAddress dl; //<! delay register
+
+    std::bitset<NUM_INTERRUPT_LINES> interrupts;
+
 };
 
 }   // namespace machine

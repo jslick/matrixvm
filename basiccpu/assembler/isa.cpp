@@ -54,7 +54,7 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         return 4;
     }
-    else if (instruction == "ret")
+    else if (instruction == "ret" || instruction == "sti" || instruction == "rti")
     {
         return 4;
     }
@@ -85,6 +85,10 @@ int Isa::calcInstructionSize(Instruction* instr)
     else if (instruction == "clrset" || instruction == "clrsetv")
     {
         return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
+    }
+    else if (instruction == "read")
+    {
+        return 4;
     }
     else if (instruction == "write")
     {
@@ -141,6 +145,14 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     else if (instruction == "ret")
     {
         generated.push_back(RET);
+    }
+    else if (instruction == "sti")
+    {
+        generated.push_back(STI);
+    }
+    else if (instruction == "rti")
+    {
+        generated.push_back(RTI);
     }
     else if (instruction == "db")   // not really part of the isa, but that's okay
     {
@@ -244,6 +256,36 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         {
             throw runtime_error("Invalid argument to clrset instruction");
         }
+    }
+    else if (instruction == "read")
+    {
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("read requires 2 arguments");
+
+        RegisterArgument* destArg = dynamic_cast<RegisterArgument*>( instr->args );
+        if (!destArg)
+            throw runtime_error("First argument of read must be a register");
+
+        MemAddress regBits = regStringToAddress(destArg->reg);
+
+        if (RegisterArgument* reg_arg = dynamic_cast<RegisterArgument*>( destArg->next ))
+        {
+            throw runtime_error("Second argument cannot be register [not implemented]");
+        }
+        else if (SymbolArgument* sym_arg = dynamic_cast<SymbolArgument*>( destArg->next ))
+        {
+            const ImmediateValue& imm = program.getSymbol(sym_arg->symbolName);
+            if (imm.instruction)
+                throw runtime_error("First argument of `read` cannot be a label");
+
+            MemAddress port = imm.value;
+            if (port > 0xFFFF)
+                throw runtime_error("The maximum port number given to `read` is 0xFFFF");
+
+            generated.push_back(READ | regBits | IMMEDIATE | port);
+        }
+        else
+            throw runtime_error("Invalid operand to read instruction");
     }
     else if (instruction == "write")
     {
