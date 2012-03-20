@@ -65,18 +65,14 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         return 4;
     }
-    else if (instruction == "db")
+    else if (instruction == "db" || instruction == "dd")
     {
         if (!instr->args)
             throw runtime_error("db must have arguments");
 
         DataArgument* data = dynamic_cast<DataArgument*>( instr->args );
         assert(data);
-        int size = data->data.size();
-        int sizeMod = size % 4;
-        if (sizeMod)
-            size += 4 - sizeMod;
-        return size;
+        return data->data.size() * 4;
     }
     else if (instruction == "mov")
     {
@@ -143,10 +139,10 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             throw runtime_error("cmp requires 2 arguments");
 
         RegisterArgument* destArg = dynamic_cast<RegisterArgument*>( instr->args );
-        const string& reg = destArg->reg;
-        MemAddress regBits = regStringToAddress(reg);
         if (!destArg)
             throw runtime_error("First argument must be a register");
+        const string& reg = destArg->reg;
+        MemAddress regBits = regStringToAddress(reg);
 
         if (RegisterArgument* reg_arg = dynamic_cast<RegisterArgument*>( instr->args->next ))
         {
@@ -199,22 +195,14 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     {
         generated.push_back(RTI);
     }
-    else if (instruction == "db")   // not really part of the isa, but that's okay
+    else if (instruction == "db" || instruction == "dd")   // not really part of the isa, but that's okay
     {
         if (!instr->args)
             throw runtime_error("db must have arguments");
 
         DataArgument* data = dynamic_cast<DataArgument*>( instr->args );
         assert(data);
-        const vector<uint8_t>& value = data->data;
-        for (unsigned int i = 0; i < value.size(); i += 4)
-        {
-            MemAddress instruction = value[i+0] << 24 |
-                                     value[i+1] << 16 |
-                                     value[i+2] <<  8 |
-                                     value[i+3] <<  0;
-            generated.push_back(instruction);
-        }
+        generated.insert(generated.end(), data->data.begin(), data->data.end());
     }
     else if (instruction == "mov")
     {

@@ -82,6 +82,7 @@ void Program::assemble(FILE* stream, bool debug)
     for (unsigned int i = 0; i < this->instructions.size(); i++)
     {
         Instruction* instr = this->instructions[i];
+        assert(instr);
         if (debug)
             printf("%08x:  ", instr->address);
 
@@ -112,6 +113,7 @@ void Program::calcAddresses()
     for (unsigned int i = 0; i < this->instructions.size(); i++)
     {
         Instruction* instr = this->instructions[i];
+        assert(instr);
         instr->address = ip;
         ip += this->isa.calcInstructionSize(instr);
         ip += ip % 4;   // align ip

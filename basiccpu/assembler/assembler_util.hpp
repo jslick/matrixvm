@@ -45,6 +45,14 @@ Instruction* addInstruction(const char* opcode, Argument* args = 0);
 Instruction* addDataInstruction(const char* directive, Argument* dataArgs);
 
 /**
+ * Create a DataArgument, with many 0's
+ * @param[in]   symbolArg   Resolved to a value; the number of 0's generated is
+ *                          this value
+ * @return  Return DataArgument full of 0's
+ */
+Argument* createBytes(Argument* symbolArg);
+
+/**
  * Add label to the next incoming instruction
  * When the next instruction is encountered, it will assume all of the current
  * labels, and the current label list will be cleared.
@@ -72,31 +80,27 @@ Argument* appendArgument(Argument* list, Argument* arg);
 /**
  * Collapses the list of DataArguments into a single DataArgument
  * @param[in,out]   list                List of DataArguments to collapse
- * @param[in]       ensureAlignment     If true, the data vector of the
- *                                      resulting argument will be padded so
- *                                      that it consumes a multiple of 4 bytes
  * @return  The first Argument in the list, but with the rest of the list
  *          merged into the first element
  */
-DataArgument* collapseDataArguments(DataArgument* list, bool ensureAlignment);
+DataArgument* collapseDataArguments(DataArgument* list);
+
+/**
+ * Change a DataArgument full of 8-bit values to 32-bit values, each having 4
+ * 8-bit values
+ * @param[in]   arg     DataArgument full of 8-bit values
+ * @return  The 8-bit values compressed big-endian into 32-bit values
+ */
+void compress8DataArguments(DataArgument& arg);
 
 /**
  * Convert string to a vector of bytes
  * @param[in]   str                 String to convert to bytes
  * @param[in]   ensureNull          If true, the vector will have at least one
  *                                  null character at the tail
- * @param[in]   ensureAlignment     If true, the vector will be tail-padded to
- *                                  align to 4 bytes
  * @return  The resulting vector
  */
-std::vector<uint8_t> stringToVector(const char* str, bool ensureNull, bool ensureAlignment);
-
-/**
- * Convert 32-bit integer to a vector of bytes, big-endian
- * @param[in]   val     32-bit integer
- * @return  4-byte vector, consisting of big-endian val
- */
-std::vector<uint8_t> int32ToVector(uint32_t val);
+std::vector<uint32_t> stringToVector(const char* str, bool ensureNull);
 
 /**
  * Inventory a new heap-allocated string

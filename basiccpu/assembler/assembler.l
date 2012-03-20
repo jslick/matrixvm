@@ -52,6 +52,16 @@ char        \'\\?[^']\'
     return DB;
 }
 
+"dd" {
+    DEBUGF("DD\n");
+    return DD;
+}
+
+"space" {
+    DEBUGF("SPACE\n");
+    return SPACE;
+}
+
 "define" {
     DEBUGF("DEFINE\n");
     return DEFINE;

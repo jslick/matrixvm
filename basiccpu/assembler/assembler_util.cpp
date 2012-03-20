@@ -50,8 +50,21 @@ Instruction* addDataInstruction(const char* directive, Argument* dataArgs)
 {
     DataArgument* dataArgList = dynamic_cast<DataArgument*>( dataArgs );
     assert(dataArgList);
-    Argument* argList = collapseDataArguments(dataArgList, true /* pad to align */);
+    DataArgument* argList = collapseDataArguments(dataArgList);
+
+    if (strncmp(directive, "db", 2) == 0)
+        compress8DataArguments(*dataArgList);
+    else if (strncmp(directive, "dw", 2) == 0)
+        assert(0 /* not yet implemented */);
+
     return addInstruction(directive, argList);
+}
+
+Argument* createBytes(Argument* symbolArg)
+{
+    MemAddress numBytes = program.solveArgumentAddress(symbolArg);
+    DataArgument* argList = new DataArgument(vector<uint32_t>(numBytes, 0));
+    return inventoryArgument(argList);
 }
 
 void addCurrentLabel(const std::string& labelName)
@@ -81,7 +94,7 @@ Argument* appendArgument(Argument* list, Argument* arg)
     return list;
 }
 
-DataArgument* collapseDataArguments(DataArgument* list, bool ensureAlignment)
+DataArgument* collapseDataArguments(DataArgument* list)
 {
     assert(list);
 
@@ -100,44 +113,43 @@ DataArgument* collapseDataArguments(DataArgument* list, bool ensureAlignment)
     // Assuming orphaned Arguments will be cleaned-up by caller; so not freeing
     // memory here
 
-    if (ensureAlignment)
-    {
-        int mod = list->data.size() % 4;
-        for (int i = 0; i < 4 - mod; i++)
-            list->data.push_back(0);
-    }
-
     return list;
 }
 
-std::vector<uint8_t> stringToVector(const char* str, bool ensureNull, bool ensureAlignment)
+void compress8DataArguments(DataArgument& arg)
 {
-    vector<uint8_t> rv;
+    int idx = 0;
+    for (unsigned int i = 0; i < arg.data.size();)
+    {
+        uint8_t bit3 = static_cast<uint8_t>( arg.data[i++] );
+        uint8_t bit2 = 0;
+        uint8_t bit1 = 0;
+        uint8_t bit0 = 0;
+        if (i < arg.data.size())
+        {
+            bit2 = static_cast<uint8_t>( arg.data[i++] );
+            if (i < arg.data.size())
+            {
+                bit1 = static_cast<uint8_t>( arg.data[i++] );
+                if (i < arg.data.size())
+                    bit0 = static_cast<uint8_t>( arg.data[i++] );
+            }
+        }
+
+        arg.data[idx++] = bit3 << 24 | bit2 << 16 | bit1 << 8 | bit0;
+    }
+    arg.data.erase(arg.data.begin() + idx, arg.data.end());
+}
+
+std::vector<uint32_t> stringToVector(const char* str, bool ensureNull)
+{
+    vector<uint32_t> rv;
 
     for (const char* ch = str; *ch; ch++)
         rv.push_back(*ch);
 
     if (ensureNull)
         rv.push_back(0);
-
-    if (ensureAlignment)
-    {
-        int mod = rv.size() % 4;
-        for (int i = 0; i < 4 - mod; i++)
-            rv.push_back(0);
-    }
-
-    return rv;
-}
-
-std::vector<uint8_t> int32ToVector(uint32_t val)
-{
-    vector<uint8_t> rv(4);
-    // remember:  big-endian
-    rv.push_back((val & 0xFF000000) >> 24);
-    rv.push_back((val & 0x00FF0000) >> 16);
-    rv.push_back((val & 0x0000FF00) >>  8);
-    rv.push_back((val & 0x000000FF) >>  0);
 
     return rv;
 }

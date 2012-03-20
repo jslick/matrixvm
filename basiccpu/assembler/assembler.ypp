@@ -34,7 +34,7 @@ extern Program program;
 %type <id>          register
 
 %token NEWLINE
-%token DB
+%token DB DD SPACE
 %token DEFINE
 %token R1 R2 R3 R4 R5 R6
 %token CMP JMP JE CALL RET STI RTI MOV STR MEMCPY CLRSET CLRSETV READ WRITE HALT IDLE ADD MUL MULW
@@ -72,7 +72,9 @@ label_dcl
 
 directive_stmt
     : DB directive_args             { addDataInstruction("db", $2); }
+    | DD directive_args             { addDataInstruction("dd", $2); }
     | DEFINE ID immediate           { setSymbol($2, $3); }
+    | SPACE immediate               { addDataInstruction("db", createBytes($2)); }
     ;
 
 directive_args
@@ -81,8 +83,8 @@ directive_args
     ;
 
 directive_arg
-    : INTVAL                        { $$ = inventoryArgument( new DataArgument(std::vector<uint8_t>(1, $1)) ); }
-    | STRVAL                        { $$ = inventoryArgument( new DataArgument(stringToVector($1, false /* don't ensure null */, false /* don't pad to align */)) ); }
+    : INTVAL                        { $$ = inventoryArgument( new DataArgument(std::vector<uint32_t>(1, $1)) ); }
+    | STRVAL                        { $$ = inventoryArgument( new DataArgument(stringToVector($1, false /* don't ensure null */)) ); }
     ;
 
 instruction

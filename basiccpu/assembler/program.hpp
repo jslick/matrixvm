@@ -51,13 +51,13 @@ struct SymbolArgument : Argument
  */
 struct DataArgument : Argument
 {
-    std::vector<uint8_t> data;
+    std::vector<uint32_t> data;
 
-    DataArgument(const std::vector<uint8_t>& data)
+    DataArgument(const std::vector<uint32_t>& data)
     : Argument(), data(data)
     {}
 
-    DataArgument(const uint8_t* data, int length)
+    DataArgument(const uint32_t* data, int length)
     : Argument(), data(data, data+length)
     {}
 };
