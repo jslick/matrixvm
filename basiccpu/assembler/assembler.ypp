@@ -43,7 +43,7 @@ extern Program program;
 %token <int32val> INTVAL
 %token DBLVAL FLTVAL
 %token <id> STRVAL
-%token CHARVAL
+%token <int32val> CHARVAL
 
 %%
 
@@ -149,6 +149,7 @@ mult_expr
 simple_expr
     : ID                            { $$ = inventoryArgument( new SymbolArgument($1) ); }
     | INTVAL                        { $$ = inventoryArgument( new IntegerArgument($1) ); }
+    | CHARVAL                       { $$ = inventoryArgument( new IntegerArgument($1) ); }
     ;
 %%
 
