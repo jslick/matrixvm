@@ -11,6 +11,7 @@ S1_LENGTH:
 main:
     mov     r1, S1
     mov     r2, S1_LENGTH-S1
-    memcpy  OUTPUT_DMA
+    mov     r3, OUTPUT_DMA
+    memcpy  r3, r1, r2
     write   OUTPORT, 1
     halt

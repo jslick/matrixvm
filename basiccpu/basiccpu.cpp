@@ -18,13 +18,50 @@ SLDECL Device* createDevice(void* args)
     return new BasicCpu;
 }
 
+static inline MemAddress getMemory32(vector<uint8_t>& memory, MemAddress location)
+{
+    return memory[location + 0] << 24 |
+           memory[location + 1] << 16 |
+           memory[location + 2] <<  8 |
+           memory[location + 3] <<  0;
+}
+
+/**
+ * Update memory with a 32-bit value
+ * @param[in,out]   memory
+ * @param[in]       location    Location to write to
+ * @param[in]       what        32-bit value to write to memory
+ */
+static inline void updateMemory32(
+        vector<uint8_t>&    memory,
+        MemAddress          location,
+        MemAddress          what)
+{
+    memory[location + 0] = (what & 0xFF000000) >> 24;
+    memory[location + 1] = (what & 0x00FF0000) >> 16;
+    memory[location + 2] = (what & 0x0000FF00) >>  8;
+    memory[location + 3] = (what & 0x000000FF) >>  0;
+}
+
+/**
+ * Update memory with a 16-bit value
+ * @param[in,out]   memory
+ * @param[in]       location    Location to write to
+ * @param[in]       what        32-bit value to write to memory
+ */
+static inline void updateMemory16(
+        vector<uint8_t>&    memory,
+        MemAddress          location,
+        MemAddress          what)
+{
+    memory[location + 0] = (what & 0xFF00) >> 8;
+    memory[location + 1] = (what & 0x00FF) >> 0;
+}
+
 static inline MemAddress getInstruction(vector<uint8_t>& memory, MemAddress& ip)
 {
     ip += 4;
-    return memory[ip-4] << 24 |
-           memory[ip-3] << 16 |
-           memory[ip-2] <<  8 |
-           memory[ip-1] <<  0;
+    return getMemory32(memory, ip - 4);
 }
 
 /**
@@ -35,11 +72,18 @@ static inline MemAddress getInstruction(vector<uint8_t>& memory, MemAddress& ip)
  */
 static inline void push(vector<uint8_t>& memory, MemAddress& sp, MemAddress what)
 {
-    sp -= 4;
-    memory[sp + 0] = (what & 0xFF000000) >> 24;
-    memory[sp + 1] = (what & 0x00FF0000) >> 16;
-    memory[sp + 2] = (what & 0x0000FF00) >>  8;
-    memory[sp + 3] = (what & 0x000000FF) >>  0;
+    updateMemory32(memory, sp -= 4, what);
+}
+
+/**
+ * Pushes 2 bytes `what` into the stack and updates the stack pointer
+ * @param[in,out]   memory
+ * @param[in,out]   sp      A reference to the stack pointer
+ * @param[in]       what    The value to push onto the stack
+ */
+static inline void push16(vector<uint8_t>& memory, MemAddress& sp, uint16_t what)
+{
+    updateMemory16(memory, sp -= 2, what);
 }
 
 /**
@@ -51,10 +95,7 @@ static inline void push(vector<uint8_t>& memory, MemAddress& sp, MemAddress what
 static inline MemAddress pop(vector<uint8_t>& memory, MemAddress& sp)
 {
     sp += 4;
-    return memory[sp - 4] << 24 |
-           memory[sp - 3] << 16 |
-           memory[sp - 2] <<  8 |
-           memory[sp - 1] <<  0;
+    return getMemory32(memory, sp - 4);
 }
 
 /**
@@ -71,23 +112,6 @@ static inline void reljump(int16_t offset, MemAddress& ip)
     }
     #endif
     ip += offset - 4;   // -4 compensates for increment
-}
-
-/**
- * Update memory with a 32-bit value
- * @param[in,out]   memory
- * @param[in]       location    Location to write to
- * @param[in]       what        32-bit value to write to memory
- */
-static inline void updateMemory32(
-        vector<uint8_t>& memory,
-        MemAddress location,
-        MemAddress what)
-{
-    memory[location + 0] = (what & 0xFF000000) >> 24;
-    memory[location + 1] = (what & 0x00FF0000) >> 16;
-    memory[location + 2] = (what & 0x0000FF00) >>  8;
-    memory[location + 3] = (what & 0x000000FF) >>  0;
 }
 
 /**
@@ -145,11 +169,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     registers[4]  = &r4;
     registers[5]  = &r5;
     registers[6]  = &r6;
-    registers[11] = &sp;
-    registers[12] = &lr;
+    registers[SP >> INS_REG] = &sp;
+    registers[LR >> INS_REG] = &lr;
     registers[13] = &ip;
-    registers[14] = &dl;
-    registers[15] = &st;
+    registers[DL >> INS_REG] = &dl;
+    registers[ST >> INS_REG] = &st;
 
     #if DEBUG
     const char* str_opcode  = 0;
@@ -179,10 +203,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             {
                 if (this->interrupts.test(i))
                 {
-                    MemAddress handler = memory[icVector + i * 4 + 0] << 24 |
-                                         memory[icVector + i * 4 + 1] << 16 |
-                                         memory[icVector + i * 4 + 2] <<  8 |
-                                         memory[icVector + i * 4 + 3] <<  0;
+                    MemAddress handler = getMemory32(memory, icVector + i * 4);
                     if (handler)
                     {
                         // save current ip
@@ -204,6 +225,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
         {
         case CMP:
             instr_mode = getMode(instruction);
+            BCPU_DBGI("cmp", modeToString(instr_mode));
 
             before = *registers[EXTRACT_REG(instruction)];
             if (instr_mode == IMMEDIATE)
@@ -213,7 +235,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             else
                 /* TODO:  generate instruction fault */;
 
-            BCPU_DBGI("cmp", modeToString(instr_mode));
+            break;
+
+        case TST:
+            BCPU_DBGI("tst", 0);
+            result = before = *registers[EXTRACT_REG(instruction)];
             break;
 
         case JMP:
@@ -224,6 +250,12 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
         case JE:
             BCPU_DBGI("je", "relative");
             if (result == 0)
+                reljump(instruction & 0xFFFF, ip);
+            break;
+
+        case JNE:
+            BCPU_DBGI("jne", "relative");
+            if (result != 0)
                 reljump(instruction & 0xFFFF, ip);
             break;
 
@@ -255,6 +287,13 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             this->st |= STATUS_INTERRUPT_MASK;
             break;
 
+        case RSTR:
+            BCPU_DBGI("rstr", "register");
+            operand = *registers[EXTRACT_REG(instruction)];
+            for (unsigned int i = 1; i < registers.size(); i++)
+                *registers[i] = getMemory32(memory, operand + (i-1) * 4);
+            break;
+
         case MOV:
             instr_mode = getMode(instruction);
             BCPU_DBGI("mov", modeToString(instr_mode));
@@ -266,6 +305,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
                 /* TODO:  generate instruction fault */;
             break;
 
+        case LOAD:
+            BCPU_DBGI("load", "absolute");
+            *registers[EXTRACT_REG(instruction)] = getMemory32(memory, getInstruction(memory, ip));
+            break;
+
         case STR:
             instr_mode = getMode(instruction);
             BCPU_DBGI("str", modeToString(instr_mode));
@@ -275,6 +319,35 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
                 updateMemory32(memory, *registers[EXTRACT_REG(instruction)], *registers[EXTRACT_SRC_REG(instruction)]);
             else
                 /* TODO:  generate instruction fault */;
+            break;
+
+        case PUSH:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("push", modeToString(instr_mode));
+            if (instr_mode == IMMEDIATE)
+                push(memory, sp, getInstruction(memory, ip));
+            else if (instr_mode == REGISTER)
+                push(memory, sp, *registers[EXTRACT_SRC_REG(instruction)]);
+            else
+                /* TODO:  generate instruction fault */;
+
+            break;
+
+        case POP:
+            BCPU_DBGI("pop", 0);
+            *registers[EXTRACT_REG(instruction)] = pop(memory, sp);
+            break;
+
+        case PUSHW:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("pushw", modeToString(instr_mode));
+            if (instr_mode == IMMEDIATE)
+                push16(memory, sp, instruction & 0xFFFF);
+            else if (instr_mode == REGISTER)
+                push16(memory, sp, *registers[EXTRACT_SRC_REG(instruction)]);
+            else
+                /* TODO:  generate instruction fault */;
+
             break;
 
         case READ:
@@ -294,11 +367,14 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             break;
 
         case MEMCPY:
-            BCPU_DBGI("memcpy", "immediate");
-            operand = getInstruction(memory, ip);
-            // copy r1 to operand, length r2
-            for (uint32_t i = 0; i < static_cast<uint32_t>( r2 ); i++)
-                memory[operand + i] = memory[r1 + i];
+            BCPU_DBGI("memcpy", "register");
+            {
+                MemAddress* destReg = registers[EXTRACT_REG(instruction)];
+                MemAddress* srcReg  = registers[(instruction & 0xFF00) >> 8];
+                MemAddress* lenReg  = registers[EXTRACT_SRC_REG(instruction)];
+                for (int i = 0; i < *lenReg; i++)
+                    memory[*destReg + i] = memory[*srcReg + i];
+            }
 
             break;
 
@@ -349,6 +425,30 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
                 /* TODO:  generate instruction fault */;
             break;
 
+        case INC:
+            BCPU_DBGI("inc", 0);
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
+            result = ++(*dest_reg);
+
+            break;
+
+        case SUB:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("sub", modeToString(instr_mode));
+
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
+            if (instr_mode == IMMEDIATE)
+                result = *dest_reg -= getInstruction(memory, ip);
+            else if (instr_mode == REGISTER)
+                result = *dest_reg -= *registers[EXTRACT_SRC_REG(instruction)];
+            else
+                /* TODO:  generate instruction fault */;
+            break;
+
         case MUL:
             instr_mode = getMode(instruction);
             BCPU_DBGI("mul", modeToString(instr_mode));
@@ -376,7 +476,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         default:
             BCPU_DBGI("undefined", 0);
-            fprintf(stderr, "Undefined instruction:  0x%8x\n", instruction);
+            fprintf(stderr, "Undefined instruction:  0x%08x\n", instruction);
             exit(1);
         }
 

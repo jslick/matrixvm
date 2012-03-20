@@ -84,7 +84,7 @@ int main(int argc, char** argv)
     const static int NUM_CPUS = 4;
 
     Motherboard* mb = new Motherboard;
-    mb->setMemorySize(9 * 1024 * 1024);
+    mb->setMemorySize(10 * 1024 * 1024);
     InterruptController* ic = new BasicInterruptController(*mb);
     mb->setInterruptController(ic);
     mb->setExceptionReport(motherboardException);

@@ -82,10 +82,9 @@ handle_keyboard:
 ; r4 = address of string
 ; r5 = length of string
 print:
-    mov     r1, r4
-    mov     r2, r5
-    memcpy  OUTPUT_DMA  ; copy string at address r1 to device memory
-    write   OUTPORT, 1  ; tell device to do its thing; 2nd operand is irrelevant for this particular device
+    mov     r1, OUTPUT_DMA
+    memcpy  r1, r4, r5
+    write   OUTPORT, 1
     ret
 
 ; r4 = left

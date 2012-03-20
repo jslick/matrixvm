@@ -10,23 +10,27 @@
 /*
  * General instruction encoding
  * *--------------------------------*
- * |  31-24 |  23-21 | 20-17 | 15-0 |
+ * |  31-24 |  23-21 | 19-16 | 15-0 |
  * | opcode | addrmd |  reg  |  src |
  * *--------------------------------*
  */
 
 /* Registers */
-#define INS_REG 17
+#define INS_REG 16
 #define INS_REG_MASK ( 0xF << INS_REG )
 #define MAX_REGISTERS ( (INS_REG_MASK >> INS_REG) + 1 )
 #define EXTRACT_REG(instruction) ( (instruction & INS_REG_MASK) >> INS_REG )
 #define EXTRACT_SRC_REG(instruction) ( instruction & 0xF )
-#define R1  ( 1 << INS_REG )
-#define R2  ( 2 << INS_REG )
-#define R3  ( 3 << INS_REG )
-#define R4  ( 4 << INS_REG )
-#define R5  ( 5 << INS_REG )
-#define R6  ( 6 << INS_REG )
+#define R1  (  1 << INS_REG )
+#define R2  (  2 << INS_REG )
+#define R3  (  3 << INS_REG )
+#define R4  (  4 << INS_REG )
+#define R5  (  5 << INS_REG )
+#define R6  (  6 << INS_REG )
+#define SP  ( 11 << INS_REG )
+#define LR  ( 12 << INS_REG )
+#define DL  ( 14 << INS_REG )
+#define ST  ( 15 << INS_REG )
 
 /* Status register */
 
@@ -54,9 +58,11 @@
 #define IDLE    ( 0x01 << INS_OPCODE )
 #define CLI     ( 0x03 << INS_OPCODE )
 #define STI     ( 0x04 << INS_OPCODE )
+#define RSTR    ( 0x08 << INS_OPCODE )
 
 // Control flow
 #define CMP     ( 0x10 << INS_OPCODE )
+#define TST     ( 0x15 << INS_OPCODE )
 #define JMP     ( 0x19 << INS_OPCODE )
 #define LNGJMP  ( 0x1a << INS_OPCODE )
 #define JE      ( 0x1b << INS_OPCODE )
@@ -74,12 +80,18 @@
 #define LOADW   ( 0x39 << INS_OPCODE )
 #define LOADB   ( 0x3a << INS_OPCODE )
 #define STR     ( 0x40 << INS_OPCODE )
-#define STRD    ( 0x41 << INS_OPCODE )
-#define STRB    ( 0x42 << INS_OPCODE )
-#define MEMCPY  ( 0x48 << INS_OPCODE )
-#define MEMSET  ( 0x49 << INS_OPCODE )  // NOTE:  not yet implemented
-#define CLRSET  ( 0x4a << INS_OPCODE )
-#define CLRSETV ( 0x4b << INS_OPCODE )
+#define STRW    ( 0x41 << INS_OPCODE )
+#define STRD    ( 0x42 << INS_OPCODE )
+#define PUSH    ( 0x43 << INS_OPCODE )
+#define PUSHW   ( 0x44 << INS_OPCODE )
+#define PUSHB   ( 0x45 << INS_OPCODE )
+#define POP     ( 0x46 << INS_OPCODE )
+#define POPW    ( 0x47 << INS_OPCODE )
+#define POPB    ( 0x48 << INS_OPCODE )
+#define MEMCPY  ( 0x49 << INS_OPCODE )
+#define MEMSET  ( 0x4a << INS_OPCODE )  // NOTE:  not yet implemented
+#define CLRSET  ( 0x4b << INS_OPCODE )
+#define CLRSETV ( 0x4c << INS_OPCODE )
 
 // I/O
 #define READ    ( 0x50 << INS_OPCODE )
@@ -87,7 +99,9 @@
 
 // Math
 #define ADD     ( 0x60 << INS_OPCODE )
-#define MUL     ( 0x64 << INS_OPCODE )
-#define MULW    ( 0x65 << INS_OPCODE )
+#define INC     ( 0x63 << INS_OPCODE )
+#define SUB     ( 0x64 << INS_OPCODE )
+#define MUL     ( 0x68 << INS_OPCODE )
+#define MULW    ( 0x69 << INS_OPCODE )
 
 #endif // OPCODES

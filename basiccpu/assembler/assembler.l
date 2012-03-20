@@ -90,6 +90,26 @@ char        \'\\?[^']\'
     }
 }
 
+"sp" {
+    DEBUGF("SP\n");
+    return SP;
+}
+
+"lr" {
+    DEBUGF("LR\n");
+    return LR;
+}
+
+"dl" {
+    DEBUGF("DL\n");
+    return DL;
+}
+
+"st" {
+    DEBUGF("ST\n");
+    return ST;
+}
+
 %{
     /* Opcodes */
 %}
@@ -97,6 +117,11 @@ char        \'\\?[^']\'
 "cmp" {
     DEBUGF("CMP\n");
     return CMP;
+}
+
+"tst" {
+    DEBUGF("TST\n");
+    return TST;
 }
 
 "jmp" {
@@ -107,6 +132,11 @@ char        \'\\?[^']\'
 "je" {
     DEBUGF("JE\n");
     return JE;
+}
+
+"jne" {
+    DEBUGF("JNE\n");
+    return JNE;
 }
 
 "call" {
@@ -124,6 +154,11 @@ char        \'\\?[^']\'
     return STI;
 }
 
+"rstr" {
+    DEBUGF("RSTR\n");
+    return RSTR;
+}
+
 "rti" {
     DEBUGF("RTI\n");
     return RTI;
@@ -134,9 +169,44 @@ char        \'\\?[^']\'
     return MOV;
 }
 
+"load" {
+    DEBUGF("LOAD\n");
+    return LOAD;
+}
+
 "str" {
     DEBUGF("STR\n");
     return STR;
+}
+
+"push" {
+    DEBUGF("PUSH\n");
+    return PUSH;
+}
+
+"pushw" {
+    DEBUGF("PUSHW\n");
+    return PUSHW;
+}
+
+"pushb" {
+    DEBUGF("PUSHB\n");
+    return PUSHB;
+}
+
+"pop" {
+    DEBUGF("POP\n");
+    return POP;
+}
+
+"popw" {
+    DEBUGF("POPW\n");
+    return POPW;
+}
+
+"popb" {
+    DEBUGF("POPB\n");
+    return POPB;
 }
 
 "memcpy" {
@@ -177,6 +247,16 @@ char        \'\\?[^']\'
 "add" {
     DEBUGF("ADD\n");
     return ADD;
+}
+
+"inc" {
+    DEBUGF("INC\n");
+    return INC;
+}
+
+"sub" {
+    DEBUGF("SUB\n");
+    return SUB;
 }
 
 "mulw" {

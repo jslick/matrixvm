@@ -17,6 +17,7 @@ CPPFLAGS:=$(CFLAGS) -std=c++0x
 
 EXE=assembler
 OBJS=$(EXE).yacc.o $(EXE).lex.o assembler_util.o program.o isa.o
+BASIC_OS_PROG=looping_funcs.s
 
 all:  $(EXE)
 
@@ -44,6 +45,9 @@ isa.o:  isa.cpp isa.hpp
 assembler.lex.cpp:  assembler.yacc.hpp
 
 assembler.yacc.hpp: assembler.yacc.cpp
+
+basic_os:  $(EXE) basic_os.s $(BASIC_OS_PROG)
+	cat basic_os.s $(BASIC_OS_PROG) | ./$(EXE) --debug -o ../bios
 
 clean:
 	$(RM) *.o
