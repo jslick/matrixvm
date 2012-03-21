@@ -310,6 +310,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             *registers[EXTRACT_REG(instruction)] = getMemory32(memory, getInstruction(memory, ip));
             break;
 
+        case LOADB:
+            BCPU_DBGI("loadb", "absolute");
+            *registers[EXTRACT_REG(instruction)] = memory[getInstruction(memory, ip)];
+            break;
+
         case STR:
             instr_mode = getMode(instruction);
             BCPU_DBGI("str", modeToString(instr_mode));

@@ -93,7 +93,7 @@ int Isa::calcInstructionSize(Instruction* instr)
 
         return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
     }
-    else if (instruction == "load")
+    else if (instruction == "load" || instruction == "loadb")
     {
         return 8;
     }
@@ -297,7 +297,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             generated.push_back(program.solveArgumentAddress(regArg->next));
         }
     }
-    else if (instruction == "load")
+    else if (instruction == "load" || instruction == "loadb")
     {
         RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args );
         if (!regArg)
@@ -314,7 +314,12 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             throw runtime_error(msg.str());
         }
 
-        generated.push_back(LOAD | regBits | ABSOLUTE);
+        MemAddress opcode = instruction == "load"  ? LOAD :
+                            instruction == "loadb" ? LOADB :
+                            0;
+        assert(opcode);
+
+        generated.push_back(opcode | regBits | ABSOLUTE);
         generated.push_back(program.solveArgumentAddress(regArg->next));
     }
     else if (instruction == "str")

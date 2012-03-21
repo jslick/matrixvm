@@ -174,6 +174,11 @@ char        \'\\?[^']\'
     return LOAD;
 }
 
+"loadb" {
+    DEBUGF("LOADB\n");
+    return LOADB;
+}
+
 "str" {
     DEBUGF("STR\n");
     return STR;
