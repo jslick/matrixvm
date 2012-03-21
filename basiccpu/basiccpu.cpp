@@ -407,7 +407,17 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
                 for (int i = 0; i < *lenReg; i++)
                     memory[*destReg + i] = memory[*srcReg + i];
             }
+            break;
 
+        case MEMSET:
+            BCPU_DBGI("memset", "register");
+            {
+                MemAddress* destReg = registers[EXTRACT_REG(instruction)];
+                MemAddress* srcReg  = registers[(instruction & 0xFF00) >> 8];
+                MemAddress* lenReg  = registers[EXTRACT_SRC_REG(instruction)];
+                for (int i = 0; i < *lenReg; i++)
+                    memory[*destReg + i] = *srcReg;
+            }
             break;
 
         case CLRSET:

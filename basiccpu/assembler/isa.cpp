@@ -126,7 +126,7 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         return 4;
     }
-    else if (instruction == "memcpy")
+    else if (instruction == "memcpy" || instruction == "memset")
     {
         return 4;
     }
@@ -428,7 +428,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         assert(opcode);
         generated.push_back(opcode | REGISTER | regStringToAddress(destReg->reg));
     }
-    else if (instruction == "memcpy")
+    else if (instruction == "memcpy" || instruction == "memset")
     {
         if (!instr->args || !instr->args->next || !instr->args->next)
             throw runtime_error("memcpy requires 3 arguments");
@@ -443,7 +443,12 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         MemAddress srcBits = regStringToAddress(srcReg->reg) >> (INS_REG - 8);
         MemAddress lenBits = regStringToAddress(lenReg->reg) >> INS_REG;
 
-        generated.push_back(MEMCPY | REGISTER | destBits | srcBits | lenBits);
+        MemAddress opcode = instruction == "memcpy" ? MEMCPY :
+                            instruction == "memset" ? MEMSET :
+                            0;
+        assert(opcode);
+
+        generated.push_back(opcode | REGISTER | destBits | srcBits | lenBits);
     }
     else if (instruction == "clrset")
     {

@@ -229,6 +229,11 @@ char        \'\\?[^']\'
     return MEMCPY;
 }
 
+"memset" {
+    DEBUGF("MEMSET\n");
+    return MEMSET;
+}
+
 "clrset" {
     DEBUGF("CLRSET\n");
     return CLRSET;
