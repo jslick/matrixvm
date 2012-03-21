@@ -149,6 +149,11 @@ char        \'\\?[^']\'
     return RET;
 }
 
+"cli" {
+    DEBUGF("CLI\n");
+    return CLI;
+}
+
 "sti" {
     DEBUGF("STI\n");
     return STI;

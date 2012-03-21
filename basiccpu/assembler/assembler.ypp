@@ -37,7 +37,7 @@ extern Program program;
 %token DB DD SPACE
 %token DEFINE
 %token R1 R2 R3 R4 R5 R6 SP LR DL ST
-%token HALT IDLE CLI STI RSTR
+%token HALT IDLE STI CLI RSTR
 %token CMP TST JMP JE JNE CALL RET RTI
 %token MOV
 %token LOAD LOADB STR STRB PUSH PUSHW PUSHB POP POPW POPB MEMCPY CLRSET CLRSETV
@@ -105,6 +105,7 @@ opcode
     | JNE                           { $$ = "jne"; }
     | CALL                          { $$ = "call"; }
     | RET                           { $$ = "ret"; }
+    | CLI                           { $$ = "cli"; }
     | STI                           { $$ = "sti"; }
     | RSTR                          { $$ = "rstr"; }
     | RTI                           { $$ = "rti"; }

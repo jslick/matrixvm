@@ -161,7 +161,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         sp -= sp % 4;
 
     st = 0;
-    dl = 100000;    // software cannot yet change this register
+    dl = 100000;
 
     MemAddress dummyReg;
     vector<MemAddress*> registers(MAX_REGISTERS, &dummyReg);
@@ -283,6 +283,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             BCPU_DBGI("rti", 0);
             // restore registers
             restoreRegisters(memory, ip);
+            break;
+
+        case CLI:
+            BCPU_DBGI("cli", 0);
+            this->st &= ~STATUS_INTERRUPT_MASK;
             break;
 
         case STI:

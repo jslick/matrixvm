@@ -69,7 +69,7 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         return 4;
     }
-    else if (instruction == "ret" || instruction == "sti" || instruction == "rti")
+    else if (instruction == "ret" || instruction == "cli" || instruction == "sti" || instruction == "rti")
     {
         return 4;
     }
@@ -242,6 +242,10 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     else if (instruction == "ret")
     {
         generated.push_back(RET);
+    }
+    else if (instruction == "cli")
+    {
+        generated.push_back(CLI);
     }
     else if (instruction == "sti")
     {
