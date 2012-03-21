@@ -143,7 +143,7 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
     }
-    else if (instruction == "inc")
+    else if (instruction == "inc" || instruction == "dec")
     {
         return 4;
     }
@@ -550,7 +550,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             throw runtime_error("Invalid operand to add instruction");
         }
     }
-    else if (instruction == "inc")
+    else if (instruction == "inc" || instruction == "dec")
     {
         if (!instr->args)
             throw runtime_error("inc requires 1 argument");
@@ -559,9 +559,14 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         if (!arg)
             throw runtime_error("inc requires a register");
 
+        MemAddress opcode = instruction == "inc" ? INC :
+                            instruction == "dec" ? DEC :
+                            0;
+        assert(opcode);
+
         const string& reg = arg->reg;
         MemAddress regBits = regStringToAddress(reg);
-        generated.push_back(INC | regBits);
+        generated.push_back(opcode | regBits);
     }
     else if (instruction == "mul")
     {

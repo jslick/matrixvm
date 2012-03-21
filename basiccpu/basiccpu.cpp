@@ -439,6 +439,15 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
             break;
 
+        case DEC:
+            BCPU_DBGI("dec", 0);
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
+            result = --(*dest_reg);
+
+            break;
+
         case SUB:
             instr_mode = getMode(instruction);
             BCPU_DBGI("sub", modeToString(instr_mode));

@@ -101,6 +101,7 @@
 #define ADD     ( 0x60 << INS_OPCODE )
 #define INC     ( 0x63 << INS_OPCODE )
 #define SUB     ( 0x64 << INS_OPCODE )
+#define DEC     ( 0x67 << INS_OPCODE )
 #define MUL     ( 0x68 << INS_OPCODE )
 #define MULW    ( 0x69 << INS_OPCODE )
 

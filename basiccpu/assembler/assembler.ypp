@@ -42,7 +42,7 @@ extern Program program;
 %token MOV
 %token LOAD LOADB STR PUSH PUSHW PUSHB POP POPW POPB MEMCPY CLRSET CLRSETV
 %token READ WRITE
-%token ADD INC SUB MUL MULW
+%token ADD INC SUB DEC MUL MULW
 %token IMMEDIATE
 %token <id> ID
 %token <int32val> INTVAL
@@ -128,6 +128,7 @@ opcode
     | ADD                           { $$ = "add"; }
     | INC                           { $$ = "inc"; }
     | SUB                           { $$ = "sub"; }
+    | DEC                           { $$ = "dec"; }
     | MUL                           { $$ = "mul"; }
     | MULW                          { $$ = "mulw"; }
     ;

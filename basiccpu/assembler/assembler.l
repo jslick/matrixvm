@@ -264,6 +264,11 @@ char        \'\\?[^']\'
     return SUB;
 }
 
+"dec" {
+    DEBUGF("DEC\n");
+    return DEC;
+}
+
 "mulw" {
     DEBUGF("MULW\n");
     return MULW;
