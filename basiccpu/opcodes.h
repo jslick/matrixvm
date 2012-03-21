@@ -68,6 +68,10 @@
 #define LNGJMP  ( 0x1a << INS_OPCODE )
 #define JE      ( 0x1b << INS_OPCODE )
 #define JNE     ( 0x1c << INS_OPCODE )
+#define JGE     ( 0x1d << INS_OPCODE )
+#define JG      ( 0x1d << INS_OPCODE )
+#define JLE     ( 0x1e << INS_OPCODE )
+#define JL      ( 0x1f << INS_OPCODE )
 #define CALL    ( 0x20 << INS_OPCODE )
 #define LNGCALL ( 0x21 << INS_OPCODE )
 #define RET     ( 0x23 << INS_OPCODE )
@@ -105,5 +109,8 @@
 #define DEC     ( 0x67 << INS_OPCODE )
 #define MUL     ( 0x68 << INS_OPCODE )
 #define MULW    ( 0x69 << INS_OPCODE )
+#define MULB    ( 0x6a << INS_OPCODE )
+#define SHR     ( 0x6b << INS_OPCODE )
+#define SHL     ( 0x6c << INS_OPCODE )
 
 #endif // OPCODES

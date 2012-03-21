@@ -515,6 +515,36 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             result = *dest_reg *= instr_operand;
             break;
 
+        case SHR:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("shr", modeToString(instr_mode));
+
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
+            if (instr_mode == IMMEDIATE)
+                result = *dest_reg >>= instruction & 0x3F;
+            else if (instr_mode == REGISTER)
+                result = *dest_reg >>= *registers[EXTRACT_SRC_REG(instruction)];
+            else
+                /* TODO:  generate instruction fault */;
+            break;
+
+        case SHL:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("shl", modeToString(instr_mode));
+
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
+            if (instr_mode == IMMEDIATE)
+                result = *dest_reg <<= instruction & 0x3F;
+            else if (instr_mode == REGISTER)
+                result = *dest_reg <<= *registers[EXTRACT_SRC_REG(instruction)];
+            else
+                /* TODO:  generate instruction fault */;
+            break;
+
         default:
             BCPU_DBGI("undefined", 0);
             fprintf(stderr, "Undefined instruction:  0x%08x\n", instruction);

@@ -279,14 +279,24 @@ char        \'\\?[^']\'
     return DEC;
 }
 
+"mul" {
+    DEBUGF("MUL\n");
+    return MUL;
+}
+
 "mulw" {
     DEBUGF("MULW\n");
     return MULW;
 }
 
-"mul" {
-    DEBUGF("MUL\n");
-    return MUL;
+"shr" {
+    DEBUGF("SHR\n");
+    return SHR;
+}
+
+"shl" {
+    DEBUGF("SHL\n");
+    return SHL;
 }
 
 %{

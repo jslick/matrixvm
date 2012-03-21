@@ -162,6 +162,10 @@ int Isa::calcInstructionSize(Instruction* instr)
     {
         return 4;
     }
+    else if (instruction == "shr" || instruction == "shl")
+    {
+        return 4;
+    }
     else
     {
         stringstream msg;
@@ -637,6 +641,37 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         else
         {
             throw runtime_error("Invalid operand to mulw instruction");
+        }
+    }
+    else if (instruction == "shr" || instruction == "shl")
+    {
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("shr/shl requires 2 arguments");
+
+        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
+        if (!arg)
+            throw runtime_error("First argument of shr/shl must be the destination register");
+
+        const string& reg = arg->reg;
+        MemAddress regBits = regStringToAddress(reg);
+
+        MemAddress opcode = instruction == "shr" ? SHR :
+                            instruction == "shl" ? SHL :
+                            0;
+        assert(opcode);
+
+        Argument* operand = instr->args->next;
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( operand ))
+        {
+            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
+            generated.push_back(opcode | regBits | REGISTER | srcRegArg);
+        }
+        else
+        {
+            MemAddress value = program.solveArgumentAddress(instr->args->next);
+            if (value > 32)
+                throw runtime_error("shr/shl operand cannot be greater than 32");
+            generated.push_back(opcode | regBits | IMMEDIATE | value);
         }
     }
     else
