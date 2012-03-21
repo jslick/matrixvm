@@ -43,6 +43,20 @@ protected:
     }
 
     /**
+     * Push all registers onto the stack
+     * @param   memory
+     * @param   ip
+     */
+    void pushRegisters(std::vector<uint8_t>& memory, MemAddress& ip);
+
+    /**
+     * Restore all registers from the stack
+     * @param   memory
+     * @param   ip
+     */
+    void restoreRegisters(std::vector<uint8_t>& memory, MemAddress& ip);
+
+    /**
      * Update status register with result of an operation
      * @param[in]   before  Value of some register before operation
      * @param[in]   result  Value of the same register after operation
@@ -64,8 +78,9 @@ private:
     MemAddress r6;
     MemAddress sp;
     MemAddress lr;
-    MemAddress st;
+    MemAddress ip;
     MemAddress dl; //<! delay register
+    MemAddress st;
 
     std::bitset<NUM_INTERRUPT_LINES> interrupts;
 

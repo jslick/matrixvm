@@ -90,6 +90,15 @@ os_start:
     call    main
     halt
 
+; save register of current task
+; r4 = address of start of registers
+save_current_registers:
+    call    get_current_task
+    add     r1, TASK_REGS_OFFSET    ; skip to registers
+    mov     r2, 60
+    memcpy  r1, r4, r2
+    ret
+
 ; Switch to a task
 ; r4 = task pid
 switch_to:
@@ -112,8 +121,6 @@ schedule:
     mov     r4, schedule_msg
     mov     r5, schedule - schedule_msg
     call    print
-
-    ; TODO:  Save current tasks's registers
 
     ; simple scheduler:  just pick the next task
     load    r4, current_task
@@ -152,11 +159,6 @@ init_task:
 handle_timer_msg:
     db      "handle_timer" 0x0a 0
 handle_timer:
-    push    r1
-    push    r2
-    push    r4
-    push    r5
-
     mov     r4, handle_timer_msg
     mov     r5, handle_timer - handle_timer_msg
     call    print
@@ -169,17 +171,16 @@ handle_timer:
     ; if schedule_countdown becomes 0, it's time to schedule a new task
     je      handle_timer_schedule
     strb    r2, r1
-
 handle_timer_return:
-    pop     r5
-    pop     r4
-    pop     r2
-    pop     r1
     rti
 handle_timer_schedule:
     ; reset schedule_countdown
     mov     r1, SCHEDULE_INTERVAL
     strb    r2, r1
+
+    ; save current tasks's registers
+    mov     r4, sp
+    call    save_current_registers
 
     ; schedule a new task
     call    schedule
@@ -301,14 +302,12 @@ fork:
     push    r2
     push    r1  ; return value = child task id
 
-    mov     r3, r1  ; save child task id
-    call    get_current_task
-    add     r1, TASK_REGS_OFFSET    ; skip to registers
-    mov     r2, 60
-    memcpy  r1, sp, r2
+    mov     r4, sp
+    push    r1      ; save child task id
+    call    save_current_registers
 
     ; switch to child
-    mov     r4, r3
+    pop     r4      ; pop child task id into r4
     call    switch_to
 
 fork_ret:

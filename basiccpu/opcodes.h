@@ -29,6 +29,7 @@
 #define R6  (  6 << INS_REG )
 #define SP  ( 11 << INS_REG )
 #define LR  ( 12 << INS_REG )
+#define IP  ( 13 << INS_REG )
 #define DL  ( 14 << INS_REG )
 #define ST  ( 15 << INS_REG )
 

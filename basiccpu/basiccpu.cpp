@@ -145,8 +145,10 @@ string BasicCpu::getName() const
     return "BasicCpu";
 }
 
-void BasicCpu::start(Motherboard& mb, MemAddress ip)
+void BasicCpu::start(Motherboard& mb, MemAddress addr)
 {
+    this->ip = addr;
+
     vector<uint8_t>& memory = Device::getMemory(mb);
 
     // Get location to interrupt vector
@@ -171,7 +173,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
     registers[6]  = &r6;
     registers[SP >> INS_REG] = &sp;
     registers[LR >> INS_REG] = &lr;
-    registers[13] = &ip;
+    registers[IP >> INS_REG] = &ip;
     registers[DL >> INS_REG] = &dl;
     registers[ST >> INS_REG] = &st;
 
@@ -206,8 +208,9 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
                     MemAddress handler = getMemory32(memory, icVector + i * 4);
                     if (handler)
                     {
-                        // save current ip
-                        push(memory, sp, ip);
+                        // save current registers
+                        // TODO:  commit status
+                        pushRegisters(memory, ip);
                         // set ip to value of interrupt vector
                         ip = handler;
                         // clear this interrupt line
@@ -278,8 +281,8 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 
         case RTI:
             BCPU_DBGI("rti", 0);
-            // restore ip
-            ip = pop(memory, sp);
+            // restore registers
+            restoreRegisters(memory, ip);
             break;
 
         case STI:
@@ -543,6 +546,44 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
 void BasicCpu::interrupt(unsigned int line)
 {
     this->interrupts[line] = 1;
+}
+
+void BasicCpu::pushRegisters(std::vector<uint8_t>& memory, MemAddress& ip)
+{
+    push(memory, sp, st);
+    push(memory, sp, dl);
+    push(memory, sp, ip);
+    push(memory, sp, lr);
+    push(memory, sp, sp);
+    push(memory, sp, 0);
+    push(memory, sp, 0);
+    push(memory, sp, 0);
+    push(memory, sp, 0);
+    push(memory, sp, r6);
+    push(memory, sp, r5);
+    push(memory, sp, r4);
+    push(memory, sp, r3);
+    push(memory, sp, r2);
+    push(memory, sp, r1);
+}
+
+void BasicCpu::restoreRegisters(std::vector<uint8_t>& memory, MemAddress& ip)
+{
+    MemAddress restoredSp;
+
+    r1  = pop(memory, sp);
+    r2  = pop(memory, sp);
+    r3  = pop(memory, sp);
+    r4  = pop(memory, sp);
+    r5  = pop(memory, sp);
+    r6  = pop(memory, sp);
+    sp += 4 * 4;
+    restoredSp = pop(memory, sp);
+    lr  = pop(memory, sp);
+    ip  = pop(memory, sp);
+    dl  = pop(memory, sp);
+    st  = pop(memory, sp);
+    sp = restoredSp;
 }
 
 void BasicCpu::updateStatus(MemAddress before, MemAddress result)
