@@ -306,13 +306,21 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
             break;
 
         case LOAD:
-            BCPU_DBGI("load", "absolute");
-            *registers[EXTRACT_REG(instruction)] = getMemory32(memory, getInstruction(memory, ip));
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("load", modeToString(instr_mode));
+            if (instr_mode == ABSOLUTE)
+                *registers[EXTRACT_REG(instruction)] = getMemory32(memory, getInstruction(memory, ip));
+            else if (instr_mode == INDIRECT)
+                *registers[EXTRACT_REG(instruction)] = getMemory32(memory, *registers[EXTRACT_SRC_REG(instruction)]);
             break;
 
         case LOADB:
-            BCPU_DBGI("loadb", "absolute");
-            *registers[EXTRACT_REG(instruction)] = memory[getInstruction(memory, ip)];
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("loadb", modeToString(instr_mode));
+            if (instr_mode == ABSOLUTE)
+                *registers[EXTRACT_REG(instruction)] = memory[getInstruction(memory, ip)];
+            else if (instr_mode == INDIRECT)
+                *registers[EXTRACT_REG(instruction)] = memory[*registers[EXTRACT_SRC_REG(instruction)]];
             break;
 
         case STR:

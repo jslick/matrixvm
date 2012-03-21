@@ -95,7 +95,10 @@ int Isa::calcInstructionSize(Instruction* instr)
     }
     else if (instruction == "load" || instruction == "loadb")
     {
-        return 8;
+        if (!instr->args || !instr->args->next)
+            throw runtime_error("mov requires 2 arguments");
+
+        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
     }
     else if (instruction == "str")
     {
@@ -323,8 +326,16 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
                             0;
         assert(opcode);
 
-        generated.push_back(opcode | regBits | ABSOLUTE);
-        generated.push_back(program.solveArgumentAddress(regArg->next));
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( regArg->next ))
+        {
+            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
+            generated.push_back(opcode | regBits | INDIRECT | srcRegArg);
+        }
+        else
+        {
+            generated.push_back(opcode | regBits | ABSOLUTE);
+            generated.push_back(program.solveArgumentAddress(regArg->next));
+        }
     }
     else if (instruction == "str" || instruction == "strb")
     {
