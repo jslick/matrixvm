@@ -184,6 +184,11 @@ char        \'\\?[^']\'
     return STR;
 }
 
+"strb" {
+    DEBUGF("STRB\n");
+    return STRB;
+}
+
 "push" {
     DEBUGF("PUSH\n");
     return PUSH;

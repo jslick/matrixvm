@@ -326,6 +326,17 @@ void BasicCpu::start(Motherboard& mb, MemAddress ip)
                 /* TODO:  generate instruction fault */;
             break;
 
+        case STRB:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("strb", modeToString(instr_mode));
+            if (instr_mode == IMMEDIATE)
+                memory[*registers[EXTRACT_REG(instruction)]] = instruction & 0xFFFF;
+            else if (instr_mode == REGISTER)
+                memory[*registers[EXTRACT_REG(instruction)]] = *registers[EXTRACT_SRC_REG(instruction)];
+            else
+                /* TODO:  generate instruction fault */;
+            break;
+
         case PUSH:
             instr_mode = getMode(instruction);
             BCPU_DBGI("push", modeToString(instr_mode));

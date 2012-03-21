@@ -40,7 +40,7 @@ extern Program program;
 %token HALT IDLE CLI STI RSTR
 %token CMP TST JMP JE JNE CALL RET RTI
 %token MOV
-%token LOAD LOADB STR PUSH PUSHW PUSHB POP POPW POPB MEMCPY CLRSET CLRSETV
+%token LOAD LOADB STR STRB PUSH PUSHW PUSHB POP POPW POPB MEMCPY CLRSET CLRSETV
 %token READ WRITE
 %token ADD INC SUB DEC MUL MULW
 %token IMMEDIATE
@@ -112,6 +112,7 @@ opcode
     | LOAD                          { $$ = "load"; }
     | LOADB                         { $$ = "loadb"; }
     | STR                           { $$ = "str"; }
+    | STRB                          { $$ = "strb"; }
     | PUSH                          { $$ = "push"; }
     | PUSHW                         { $$ = "pushw"; }
     | PUSHB                         { $$ = "pushb"; }

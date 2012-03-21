@@ -104,6 +104,10 @@ int Isa::calcInstructionSize(Instruction* instr)
 
         return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
     }
+    else if (instruction == "strb")
+    {
+        return 4;
+    }
     else if (instruction == "push")
     {
         if (!instr->args)
@@ -322,7 +326,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         generated.push_back(opcode | regBits | ABSOLUTE);
         generated.push_back(program.solveArgumentAddress(regArg->next));
     }
-    else if (instruction == "str")
+    else if (instruction == "str" || instruction == "strb")
     {
         RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args );
         if (!regArg)
@@ -339,15 +343,24 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             throw runtime_error(msg.str());
         }
 
+        MemAddress opcode = instruction == "str"  ? STR :
+                            instruction == "strb" ? STRB :
+                            0;
+        assert(opcode);
         if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( regArg->next ))
         {
             MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(regBits | STR | REGISTER | srcRegArg);
+            generated.push_back(regBits | opcode | REGISTER | srcRegArg);
         }
         else
         {
-            generated.push_back(regBits | STR | IMMEDIATE);
-            generated.push_back(program.solveArgumentAddress(regArg->next));
+            if (opcode == STR)
+            {
+                generated.push_back(regBits | opcode | IMMEDIATE);
+                generated.push_back(program.solveArgumentAddress(regArg->next));
+            }
+            else
+                generated.push_back(regBits | opcode | IMMEDIATE | program.solveArgumentAddress(regArg->next));
         }
     }
     else if (instruction == "push" || instruction == "pushw" || instruction == "pushb")

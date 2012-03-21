@@ -81,7 +81,7 @@
 #define LOADB   ( 0x3a << INS_OPCODE )
 #define STR     ( 0x40 << INS_OPCODE )
 #define STRW    ( 0x41 << INS_OPCODE )
-#define STRD    ( 0x42 << INS_OPCODE )
+#define STRB    ( 0x42 << INS_OPCODE )
 #define PUSH    ( 0x43 << INS_OPCODE )
 #define PUSHW   ( 0x44 << INS_OPCODE )
 #define PUSHB   ( 0x45 << INS_OPCODE )
