@@ -4,6 +4,8 @@
 #include "assembler.yacc.hpp"
 #include "assembler_util.hpp"
 
+extern int yyerror(const char *);
+
 #ifdef DEBUG_LEX
 #    define DEBUGF(...) printf(__VA_ARGS__)
 #else
@@ -359,6 +361,41 @@ char        \'\\?[^']\'
 
 {char} {
     DEBUGF("CHARVAL\n");
+    if (strlen(yytext) == 3)
+        yylval.int32val = yytext[1];
+    else if (strlen(yytext) == 4 && yytext[3] == '\\')
+    {   // handle escape characters
+        char escaped = yytext[2];
+        switch (escaped)
+        {
+        case 'b':
+            yylval.int32val = '\b';
+            break;
+        case 'n':
+            yylval.int32val = '\n';
+            break;
+        case 'r':
+            yylval.int32val = '\r';
+            break;
+        case 't':
+            yylval.int32val = '\t';
+            break;
+        case '\"':
+            yylval.int32val = '\"';
+            break;
+        case '\\':
+            yylval.int32val = '\\';
+            break;
+        default:
+            if (escaped >= '0' && escaped <= '9')
+                yylval.int32val = escaped - '0';
+            else
+                yyerror("Invalid character escape");
+        }
+    }
+    else
+        yyerror("Invalid character literal");
+
     return CHARVAL;
 }
 
