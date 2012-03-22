@@ -11,7 +11,7 @@ MemAddress ImmediateValue::getAddress() const
     return this->instruction ? this->instruction->address : this->value;
 }
 
-Program::Program(const Isa& isa, int offset /* = 0 */)
+Program::Program(Isa& isa, int offset /* = 0 */)
 : isa(isa), offset(offset)
 { }
 
@@ -26,7 +26,7 @@ Instruction* Program::createInstruction(
     Instruction::AddrMode   addrMode /* = NumAddrModes */
     )
 {
-    Instruction* instr = new Instruction(instruction, addrMode);
+    Instruction* instr = new Instruction(isa.getOpcode(instruction), addrMode);
     this->instructions.push_back(instr);
     return instr;
 }
@@ -86,7 +86,7 @@ void Program::assemble(FILE* stream, bool debug)
         if (debug)
             printf("%08x:  ", instr->address);
 
-        vector<MemAddress> generated = this->isa.generateInstructions(*this, instr);
+        vector<MemAddress> generated = this->isa.generateInstructions(*this, *instr);
         for (unsigned int j = 0; j < generated.size(); j++)
         {
             MemAddress ins = generated[j];
@@ -115,7 +115,7 @@ void Program::calcAddresses()
         Instruction* instr = this->instructions[i];
         assert(instr);
         instr->address = ip;
-        ip += this->isa.calcInstructionSize(instr);
+        ip += this->isa.calcInstructionSize(*instr);
         ip += ip % 4;   // align ip
     }
 }

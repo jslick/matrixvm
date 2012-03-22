@@ -13,8 +13,9 @@ extern int yylineno;
 extern void yyerror(const char*);
 extern int yylex();
 
-extern Options options;
-extern Program program;
+extern Options  options;
+extern Program* program;
+extern Isa*     isa;
 
 %}
 
@@ -53,7 +54,7 @@ extern Program program;
 %%
 
 program
-    : line program2                 {   program.assemble(options.outputFile, options.debugFlag);
+    : line program2                 {   program->assemble(options.outputFile, options.debugFlag);
                                         cleanupArgs();
                                         cleanupStrings();
                                     }
@@ -256,9 +257,14 @@ int main(int argc, char** argv)
     else if (!options.outputFile)
         options.outputFile = stdout;
 
+    isa = new Isa();
+    program = new Program(*isa, 7000000 /* offset */);
+
     int rv = yyparse();
 
     // cleanup
+    delete program;
+    delete isa;
     if (openedFile)
         fclose(options.outputFile);
 

@@ -9,8 +9,8 @@ using namespace std;
 
 Options options;
 
-Isa isa;
-Program program(isa, 7000000 /* offset */);
+Isa* isa;
+Program* program;
 
 std::queue<char*> heapStrings;  // heap-allocated strings to free
 std::queue<Argument*> args;     // heap-allocated Arguments to delete
@@ -25,7 +25,7 @@ std::queue<std::string> currentLabels;
 
 void setSymbol(const char* symbolName, Argument* value)
 {
-    program.setSymbol(symbolName, program.solveArgumentAddress(value));
+    program->setSymbol(symbolName, program->solveArgumentAddress(value));
 }
 
 Instruction* addInstruction(const char* opcode, Argument* args)
@@ -33,13 +33,13 @@ Instruction* addInstruction(const char* opcode, Argument* args)
     if (options.debugFlag)
         printf("Instruction:  %s\n", opcode);
 
-    Instruction* instr = program.createInstruction(opcode);
+    Instruction* instr = program->createInstruction(opcode);
     instr->args = args;
 
     // Consume all current labels
     while (!currentLabels.empty())
     {
-        program.setSymbol(currentLabels.front(), instr);
+        program->setSymbol(currentLabels.front(), instr);
         currentLabels.pop();
     }
 
@@ -62,7 +62,7 @@ Instruction* addDataInstruction(const char* directive, Argument* dataArgs)
 
 Argument* createBytes(Argument* symbolArg)
 {
-    MemAddress numBytes = program.solveArgumentAddress(symbolArg);
+    MemAddress numBytes = program->solveArgumentAddress(symbolArg);
     DataArgument* argList = new DataArgument(vector<uint32_t>(numBytes, 0));
     return inventoryArgument(argList);
 }

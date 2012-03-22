@@ -103,8 +103,8 @@ struct Instruction
         NumAddrModes
     };
 
-    std::string instruction;    //!< Name of instruction
-    int         address;        //!< To be calculated at assemble time
+    MemAddress  opcode;
+    int         address;    //!< To be calculated at assemble time
     Argument*   args;
     AddrMode    addrMode;
 
@@ -113,8 +113,8 @@ private:
     /**
      * @param[in]   instruction     Name of instruction
      */
-    Instruction(const std::string& instruction, AddrMode addrMode = NumAddrModes)
-    : instruction(instruction), address(-1), addrMode(addrMode)
+    Instruction(MemAddress opcode, AddrMode addrMode = NumAddrModes)
+    : opcode(opcode), address(-1), addrMode(addrMode)
     { }
 };
 
@@ -128,7 +128,7 @@ public:
      * @param[in]   isa     Instruction Set used to generate code
      * @param[in]   offset  Address offset to generate instruction addresses from
      */
-    Program(const Isa& isa, int offset = 0);
+    Program(Isa& isa, int offset = 0);
 
     /**
      * Cleans up generated instructions
@@ -222,10 +222,10 @@ protected:
 private:
 
     // Copy not permitted
-    Program(const Program& program) { }
+    Program(const Program& program) : isa(*new Isa() /* hack -- weeeeee! */) { }
 
-    Isa isa;        //<! Instruction set of program to generate
-    int offset;     //<! Offset of instructions to generate
+    Isa& isa;       //<! Instruction set of program to generate
+    int  offset;    //<! Offset of instructions to generate
     std::vector<Instruction*> instructions; //<! All instructions in the program, in sequential order
     std::unordered_map<std::string,ImmediateValue> symbols;   //<! Map of symbols -> instruction/value
 };

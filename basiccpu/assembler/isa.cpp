@@ -2,11 +2,18 @@
 #include "program.hpp"
 #include "../opcodes.h"
 
+#include <algorithm>
 #include <sstream>
+#include <iomanip>
 #include <stdexcept>
 #include <cassert>
 
 using namespace std;
+
+// Pseudo-opcodes
+#define DB 0x01
+#define DW 0x02
+#define DD 0x03
 
 static MemAddress modeEnumToConstant(Instruction::AddrMode mode)
 {
@@ -47,393 +54,339 @@ static inline MemAddress regStringToAddress(const string& regStr)
            0;
 }
 
-int Isa::calcInstructionSize(Instruction* instr)
+Isa::Isa()
+: opcodeTableLoaded(false), instructionSizeTableLoaded(false)
+{ }
+
+MemAddress Isa::getOpcode(const std::string& instruction)
 {
-    const string& instruction = instr->instruction;
-    if (instruction == "cmp")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("cmp requires 2 arguments");
+    if (!this->opcodeTableLoaded)
+        this->loadOpcodeTable();
 
-        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
-    }
-    else if (instruction == "tst")
+    try
     {
-        return 4;
+        return this->opcodeTable.at(instruction);
     }
-    else if (instruction == "jmp" || instruction == "je" || instruction == "jne")
-    {
-        return 4;
-    }
-    else if (instruction == "call")
-    {
-        return 4;
-    }
-    else if (instruction == "ret" || instruction == "cli" || instruction == "sti" || instruction == "rti")
-    {
-        return 4;
-    }
-    else if (instruction == "rstr")
-    {
-        return 4;
-    }
-    else if (instruction == "db" || instruction == "dd")
-    {
-        if (!instr->args)
-            throw runtime_error("db must have arguments");
-
-        DataArgument* data = dynamic_cast<DataArgument*>( instr->args );
-        assert(data);
-        return data->data.size() * 4;
-    }
-    else if (instruction == "mov")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("mov requires 2 arguments");
-
-        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
-    }
-    else if (instruction == "load" || instruction == "loadb")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("mov requires 2 arguments");
-
-        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
-    }
-    else if (instruction == "str")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("str requires 2 arguments");
-
-        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
-    }
-    else if (instruction == "strb")
-    {
-        return 4;
-    }
-    else if (instruction == "push")
-    {
-        if (!instr->args)
-            throw runtime_error("push requires an argument");
-
-        return dynamic_cast<RegisterArgument*>( instr->args ) ? 4 : 8;
-    }
-    else if (instruction == "pushw" || instruction == "pushb")
-    {
-        return 4;
-    }
-    else if (instruction.compare(0, 3, "pop") == 0)
-    {
-        return 4;
-    }
-    else if (instruction == "memcpy" || instruction == "memset")
-    {
-        return 4;
-    }
-    else if (instruction == "clrset" || instruction == "clrsetv")
-    {
-        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
-    }
-    else if (instruction == "read")
-    {
-        return 4;
-    }
-    else if (instruction == "write")
-    {
-        return 8;
-    }
-    else if (instruction == "halt" || instruction == "idle")
-    {
-        return 4;
-    }
-    else if (instruction == "add" || instruction == "sub")
-    {
-        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
-    }
-    else if (instruction == "inc" || instruction == "dec")
-    {
-        return 4;
-    }
-    else if (instruction == "mul")
-    {
-        return dynamic_cast<RegisterArgument*>( instr->args->next ) ? 4 : 8;
-    }
-    else if (instruction == "mulw")
-    {
-        return 4;
-    }
-    else if (instruction == "shr" || instruction == "shl")
-    {
-        return 4;
-    }
-    else
+    catch (out_of_range& e)
     {
         stringstream msg;
-        msg << "Unrecognized instruction:  " << instruction;
+        msg << "No opcode " << instruction << " in opcode table";
         throw runtime_error(msg.str());
     }
 }
 
-vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction* instr)
+int Isa::calcInstructionSize(Instruction& instr)
+{
+    if (!this->instructionSizeTableLoaded)
+        this->loadInstructionSizeTable();
+
+    try
+    {
+        int size = this->instructionSizeTable.at(instr.opcode);
+        if (size)
+            return size;
+        // else:  it needs to be determined according to the instructions operands
+    }
+    catch (out_of_range& e)
+    {
+        stringstream msg;
+        msg << "Missing instruction size for " << reverseOpcodeTable.at(instr.opcode);
+        throw runtime_error(msg.str());
+    }
+
+    auto arg1IsRegister = [this,&instr]() -> bool {
+        if (!instr.args)
+        {
+            stringstream msg;
+            msg << "Missing argument for " << reverseOpcodeTable.at(instr.opcode);
+            throw runtime_error(msg.str());
+        }
+        return dynamic_cast<RegisterArgument*>( instr.args ) ? true : false;
+    };
+
+    auto arg2IsRegister = [this,&instr]() -> bool {
+        if (!instr.args)
+        {
+            stringstream msg;
+            msg << "Missing argument for " << reverseOpcodeTable.at(instr.opcode);
+            throw runtime_error(msg.str());
+        }
+        if (!instr.args->next)
+        {
+            stringstream msg;
+            msg << "Missing 2nd argument for " << reverseOpcodeTable.at(instr.opcode);
+            throw runtime_error(msg.str());
+        }
+        return dynamic_cast<RegisterArgument*>( instr.args->next ) ? true : false;
+    };
+
+    switch (instr.opcode)
+    {
+    case DB:
+    case DW:
+    case DD:
+    {
+        DataArgument* data = dynamic_cast<DataArgument*>( instr.args );
+        if (!data)
+            throw runtime_error("db/dw/dd requires at least 1 data argument");
+        return data->data.size() * 4;
+    }
+
+    case CMP:
+        return arg2IsRegister() ? 4 : 8;
+
+    case MOV:
+        return arg2IsRegister() ? 4 : 8;
+
+    case LOAD:
+    case LOADW:
+    case LOADB:
+    case STR:
+        return arg2IsRegister() ? 4 : 8;
+    case PUSH:
+        return arg1IsRegister() ? 4 : 8;
+    case CLRSET:
+    case CLRSETV:
+        return arg1IsRegister() ? 4 : 8;
+
+    case ADD:
+    case SUB:
+    case MUL:
+        return arg2IsRegister() ? 4 : 8;
+
+    default:
+        stringstream msg;
+        msg << "Missing dynamic instruction size for " << reverseOpcodeTable.at(instr.opcode);
+        throw runtime_error(msg.str());
+        assert(0 /* should have returned before entering the switch */);
+    }
+}
+
+vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction& instr)
 {
     vector<MemAddress> generated;
 
-    const string& instruction = instr->instruction;
-    if (instruction == "cmp")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("cmp requires 2 arguments");
-
-        RegisterArgument* destArg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!destArg)
-            throw runtime_error("First argument must be a register");
-        const string& reg = destArg->reg;
-        MemAddress regBits = regStringToAddress(reg);
-
-        if (RegisterArgument* reg_arg = dynamic_cast<RegisterArgument*>( instr->args->next ))
+    auto validateNumArguments = [this,&instr](int num) {
+        Argument* cur = instr.args;
+        for (int i = 0; i < num; i++)
         {
-            MemAddress srcRegArg = regStringToAddress(reg_arg->reg) >> INS_REG;
-            generated.push_back(CMP | regBits | REGISTER | srcRegArg);
+            if (!cur)
+            {
+                stringstream msg;
+                msg << "Missing argument " << (i + 1) << " to " << reverseOpcodeTable.at(instr.opcode);
+                throw runtime_error(msg.str());
+            }
+            cur = cur->next;
         }
-        else
-        {
-            generated.push_back(CMP | regBits | IMMEDIATE);
-            generated.push_back(program.solveArgumentAddress(instr->args->next));
-        }
-    }
-    else if (instruction == "tst")
-    {
-        if (!instr->args)
-            throw runtime_error("tst requires 1 argument");
+    };
 
-        RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!regArg)
-            throw runtime_error("First argument must be a register");
-        const string& reg = regArg->reg;
-        MemAddress regBits = regStringToAddress(reg);
-
-        generated.push_back(TST | regBits);
-    }
-    else if (instruction == "jmp" || instruction == "je" || instruction == "jne" || instruction == "call")
-    {
-        if (!instr->args)
+    auto getFirstReg = [this,&instr]() -> RegisterArgument* {
+        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr.args );
+        if (!arg)
         {
             stringstream msg;
-            msg << instruction << " must have a destination";
+            msg << "First argument of `" << reverseOpcodeTable.at(instr.opcode) << "` must be a register";
             throw runtime_error(msg.str());
         }
+        return arg;
+    };
 
-        SymbolArgument* destSymbol = dynamic_cast<SymbolArgument*>( instr->args );
-        // TODO:  support other types (like integers)
-        if (!destSymbol)
-            throw runtime_error("First argument of jmp must be a symbol");
-
-        const MemAddress& destAddress = program.getSymbol(destSymbol->symbolName).getAddress();
-
-        MemAddress diff = destAddress - instr->address;
-        if (diff > 0xFFFF || diff < -0xFFFF)
-            throw runtime_error("jmp out of range");
-
-        uint16_t bitableDiff = static_cast<uint16_t>( diff );
-        MemAddress opcode = instruction == "jmp"  ? JMP :
-                            instruction == "je"   ? JE :
-                            instruction == "jne"  ? JNE :
-                            instruction == "call" ? CALL :
-                            0;
-        assert(opcode /* don't forget to set `opcode` */);
-        generated.push_back(opcode | RELATIVE | bitableDiff);
-    }
-    else if (instruction == "ret")
-    {
-        generated.push_back(RET);
-    }
-    else if (instruction == "cli")
-    {
-        generated.push_back(CLI);
-    }
-    else if (instruction == "sti")
-    {
-        generated.push_back(STI);
-    }
-    else if (instruction == "rti")
-    {
-        generated.push_back(RTI);
-    }
-    else if (instruction == "rstr")
-    {
-        if (!instr->args)
-            throw runtime_error("rstr requires an argument");
-
-        RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!arg_reg)
-            throw runtime_error("rstr requires a register argument");
-
-        MemAddress regBits = regStringToAddress(arg_reg->reg);
-
-        generated.push_back(RSTR | REGISTER | regBits);
-    }
-    else if (instruction == "db" || instruction == "dd")   // not really part of the isa, but that's okay
-    {
-        if (!instr->args)
-            throw runtime_error("db must have arguments");
-
-        DataArgument* data = dynamic_cast<DataArgument*>( instr->args );
-        assert(data);
-        generated.insert(generated.end(), data->data.begin(), data->data.end());
-    }
-    else if (instruction == "mov")
-    {
-        RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!regArg)
-            throw runtime_error("First argument of mov must be a register");
-        else if (!regArg->next)
-            throw runtime_error("mov requires 2 arguments");
-
-        const string& reg = regArg->reg;
+    auto argToRegBits = [this,&instr](RegisterArgument& arg) -> MemAddress {
+        const string& reg = arg.reg;
         MemAddress regBits = regStringToAddress(reg);
         if (!regBits)
         {
             stringstream msg;
-            msg << "Invalid register given to `mov`:  " << reg;
+            msg << "Invalid register given to `" << reverseOpcodeTable.at(instr.opcode)
+                << "`:  " << reg;
             throw runtime_error(msg.str());
         }
 
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( regArg->next ))
+        return regBits;
+    };
+
+    switch (instr.opcode)
+    {
+    case DB:
+    case DW:
+    case DD:
+    {
+        DataArgument* data = dynamic_cast<DataArgument*>( instr.args );
+        assert(data);
+        generated.insert(generated.end(), data->data.begin(), data->data.end());
+        break;
+    }
+
+    case HALT:
+    case IDLE:
+    case CLI:
+    case STI:
+        generated.push_back(instr.opcode);
+        break;
+
+    case RSTR:
+    {
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        generated.push_back(instr.opcode | regBits);
+        break;
+    }
+
+    case CMP:
+    {
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        validateNumArguments(2);
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args->next ))
+        {
+            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
+            generated.push_back(instr.opcode | regBits | REGISTER | srcRegArg);
+        }
+        else
+        {
+            generated.push_back(instr.opcode | regBits | IMMEDIATE);
+            generated.push_back(program.solveArgumentAddress(instr.args->next));
+        }
+        break;
+    }
+
+    case TST:
+    {
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        generated.push_back(instr.opcode | regBits);
+        break;
+    }
+
+    case JMP:
+    case JE:
+    case JNE:
+    case CALL:
+    {
+        validateNumArguments(1);
+        MemAddress destination = program.solveArgumentAddress(instr.args);
+        MemAddress diff = destination - instr.address;
+        if (diff > 0xFFFF || diff < -0xFFFF)
+            throw runtime_error("jmp out of range");
+        generated.push_back(instr.opcode | RELATIVE | static_cast<uint16_t>( diff ));
+        break;
+    }
+
+    case RET:
+    case RTI:
+        generated.push_back(instr.opcode);
+        break;
+
+    case MOV:
+    {
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        validateNumArguments(2);
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args->next ))
         {
             // The value returned by regStringToAddress is the register value
             // if the register were a destination.  This register, however, is
             // the source register, which is placed at bit 0.  So, we shift the result back
             MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(regBits | MOV | REGISTER | srcRegArg);
+            generated.push_back(instr.opcode | regBits | REGISTER | srcRegArg);
         }
         else
         {
-            generated.push_back(regBits | MOV | IMMEDIATE);
-            generated.push_back(program.solveArgumentAddress(regArg->next));
+            generated.push_back(instr.opcode | regBits | IMMEDIATE);
+            generated.push_back(program.solveArgumentAddress(instr.args->next));
         }
+        break;
     }
-    else if (instruction == "load" || instruction == "loadb")
+
+    case LOAD:
+    case LOADW:
+    case LOADB:
     {
-        RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!regArg)
-            throw runtime_error("First argument of load must be a register");
-        else if (!regArg->next)
-            throw runtime_error("load requires 2 arguments");
-
-        const string& reg = regArg->reg;
-        MemAddress regBits = regStringToAddress(reg);
-        if (!regBits)
-        {
-            stringstream msg;
-            msg << "Invalid register given to `load`:  " << reg;
-            throw runtime_error(msg.str());
-        }
-
-        MemAddress opcode = instruction == "load"  ? LOAD :
-                            instruction == "loadb" ? LOADB :
-                            0;
-        assert(opcode);
-
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( regArg->next ))
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        validateNumArguments(2);
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args->next ))
         {
             MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(opcode | regBits | INDIRECT | srcRegArg);
+            generated.push_back(instr.opcode | regBits | INDIRECT | srcRegArg);
         }
         else
         {
-            generated.push_back(opcode | regBits | ABSOLUTE);
-            generated.push_back(program.solveArgumentAddress(regArg->next));
+            generated.push_back(instr.opcode | regBits | ABSOLUTE);
+            generated.push_back(program.solveArgumentAddress(instr.args->next));
         }
+        break;
     }
-    else if (instruction == "str" || instruction == "strb")
+
+    case STR:
+    case STRW:
+    case STRB:
     {
-        RegisterArgument* regArg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!regArg)
-            throw runtime_error("First argument of str must be a register");
-        else if (!regArg->next)
-            throw runtime_error("str requires 2 arguments");
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        validateNumArguments(2);
 
-        const string& reg = regArg->reg;
-        MemAddress regBits = regStringToAddress(reg);
-        if (!regBits)
-        {
-            stringstream msg;
-            msg << "Invalid register given to `str`:  " << reg;
-            throw runtime_error(msg.str());
-        }
-
-        MemAddress opcode = instruction == "str"  ? STR :
-                            instruction == "strb" ? STRB :
-                            0;
-        assert(opcode);
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( regArg->next ))
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args->next ))
         {
             MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(regBits | opcode | REGISTER | srcRegArg);
+            generated.push_back(instr.opcode | regBits | REGISTER | srcRegArg);
         }
         else
         {
-            if (opcode == STR)
+            if (instr.opcode == STR)
             {
-                generated.push_back(regBits | opcode | IMMEDIATE);
-                generated.push_back(program.solveArgumentAddress(regArg->next));
+                generated.push_back(instr.opcode | regBits | IMMEDIATE);
+                generated.push_back(program.solveArgumentAddress(instr.args->next));
             }
             else
-                generated.push_back(regBits | opcode | IMMEDIATE | program.solveArgumentAddress(regArg->next));
+                generated.push_back(instr.opcode | regBits | IMMEDIATE | program.solveArgumentAddress(instr.args->next));
         }
+        break;
     }
-    else if (instruction == "push" || instruction == "pushw" || instruction == "pushb")
+
+    case PUSH:
+    case PUSHW:
+    case PUSHB:
     {
-        if (!instr->args)
-            throw runtime_error("push* requires an argument");
+        validateNumArguments(1);
 
-        MemAddress opcode = instruction == "push"  ? PUSH :
-                            instruction == "pushw" ? PUSHW :
-                            instruction == "pushb" ? PUSHB :
-                            0;
-        assert(opcode);
-
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr->args ))
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args ))
         {
             MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(opcode | REGISTER | srcRegArg);
+            generated.push_back(instr.opcode | REGISTER | srcRegArg);
         }
         else
         {
-            if (opcode == PUSH)
+            if (instr.opcode == PUSH)
             {
-                generated.push_back(opcode | IMMEDIATE);
-                generated.push_back(program.solveArgumentAddress(instr->args));
+                generated.push_back(instr.opcode | IMMEDIATE);
+                generated.push_back(program.solveArgumentAddress(instr.args));
             }
             else
             {
-                uint16_t operand = program.solveArgumentAddress(instr->args) & 0xFFFF;
-                generated.push_back(opcode | IMMEDIATE | operand);
+                uint16_t operand = program.solveArgumentAddress(instr.args) & 0xFFFF;
+                generated.push_back(instr.opcode | IMMEDIATE | operand);
             }
         }
+
+        break;
     }
-    else if (instruction.compare(0, 3, "pop") == 0)
+
+    case POP:
+    case POPW:
+    case POPB:
     {
-        if (!instr->args)
-            throw runtime_error("pop requires 1 argument");
-
-        RegisterArgument* destReg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!destReg)
-            throw runtime_error("pop argument must be a register");
-
-        MemAddress opcode = instruction == "pop"  ? POP :
-                            instruction == "popw" ? POPW :
-                            instruction == "popb" ? POPB :
-                            0;
-        assert(opcode);
-        generated.push_back(opcode | REGISTER | regStringToAddress(destReg->reg));
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        generated.push_back(instr.opcode | regBits);
+        break;
     }
-    else if (instruction == "memcpy" || instruction == "memset")
-    {
-        if (!instr->args || !instr->args->next || !instr->args->next)
-            throw runtime_error("memcpy requires 3 arguments");
 
-        RegisterArgument* destReg = dynamic_cast<RegisterArgument*>( instr->args );
+    case MEMCPY:
+    case MEMSET:
+    {
+        validateNumArguments(3);
+        RegisterArgument* destReg = dynamic_cast<RegisterArgument*>( instr.args );
         RegisterArgument* srcReg = dynamic_cast<RegisterArgument*>( destReg->next );
         RegisterArgument* lenReg = dynamic_cast<RegisterArgument*>( srcReg->next );
         if (!destReg || !srcReg || !lenReg)
@@ -443,71 +396,46 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         MemAddress srcBits = regStringToAddress(srcReg->reg) >> (INS_REG - 8);
         MemAddress lenBits = regStringToAddress(lenReg->reg) >> INS_REG;
 
-        MemAddress opcode = instruction == "memcpy" ? MEMCPY :
-                            instruction == "memset" ? MEMSET :
-                            0;
-        assert(opcode);
-
-        generated.push_back(opcode | REGISTER | destBits | srcBits | lenBits);
+        generated.push_back(instr.opcode | REGISTER | destBits | srcBits | lenBits);
+        break;
     }
-    else if (instruction == "clrset")
-    {
-        if (!instr->args)
-            throw runtime_error("clrset requires 1 argument");
 
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr->args ))
+    case CLRSET:
+    case CLRSETV:
+    {
+        validateNumArguments(1);
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args ))
         {
             MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(CLRSET | REGISTER | srcRegArg);
+            generated.push_back(instr.opcode | REGISTER | srcRegArg);
         }
-        else if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( instr->args ))
+        else if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( instr.args ))
         {
-            generated.push_back(CLRSET | IMMEDIATE);
+            generated.push_back(instr.opcode | IMMEDIATE);
             generated.push_back(reg_int->data);
         }
         else
         {
-            throw runtime_error("Invalid argument to clrset instruction");
+            stringstream msg;
+            msg << "Invalid argument to `" << reverseOpcodeTable.at(instr.opcode) << "` instruction";
+            throw runtime_error(msg.str());
         }
+
+        break;
     }
-    else if (instruction == "clrsetv")
+
+    case READ:
     {
-        if (!instr->args)
-            throw runtime_error("clrsetv requires 1 argument");
-
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr->args ))
-        {
-            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(CLRSETV | REGISTER | srcRegArg);
-        }
-        else if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( instr->args ))
-        {
-            generated.push_back(CLRSETV | IMMEDIATE);
-            generated.push_back(reg_int->data);
-        }
-        else
-        {
-            throw runtime_error("Invalid argument to clrset instruction");
-        }
-    }
-    else if (instruction == "read")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("read requires 2 arguments");
-
-        RegisterArgument* destArg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!destArg)
-            throw runtime_error("First argument of read must be a register");
-
-        MemAddress regBits = regStringToAddress(destArg->reg);
-
-        if (RegisterArgument* reg_arg = dynamic_cast<RegisterArgument*>( destArg->next ))
+        validateNumArguments(2);
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args->next ))
         {
             throw runtime_error("Second argument cannot be register [not implemented]");
         }
-        else if (SymbolArgument* sym_arg = dynamic_cast<SymbolArgument*>( destArg->next ))
+        else if (SymbolArgument* arg_sym = dynamic_cast<SymbolArgument*>( instr.args->next ))
         {
-            const ImmediateValue& imm = program.getSymbol(sym_arg->symbolName);
+            const ImmediateValue& imm = program.getSymbol(arg_sym->symbolName);
             if (imm.instruction)
                 throw runtime_error("First argument of `read` cannot be a label");
 
@@ -515,21 +443,19 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
             if (port > 0xFFFF)
                 throw runtime_error("The maximum port number given to `read` is 0xFFFF");
 
-            generated.push_back(READ | regBits | IMMEDIATE | port);
+            generated.push_back(instr.opcode | regBits | IMMEDIATE | port);
         }
         else
             throw runtime_error("Invalid operand to read instruction");
+
+        break;
     }
-    else if (instruction == "write")
+
+    case WRITE:
     {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("write requires 2 arguments");
-
-        // TODO:  support register as either argument, instead of just immediate values
-
-        // Generate instruction
-        SymbolArgument* portArg = dynamic_cast<SymbolArgument*>( instr->args );
-        assert(portArg);
+        SymbolArgument* portArg = dynamic_cast<SymbolArgument*>( instr.args );
+        if (!portArg)
+            throw runtime_error("First argument of write must be a symbol");
 
         const ImmediateValue& imm = program.getSymbol(portArg->symbolName);
         if (imm.instruction)
@@ -539,152 +465,206 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
         if (port > 0xFFFF)
             throw runtime_error("The maximum port number given to `write` is 0xFFFF");
 
-        generated.push_back(WRITE | port);
-
-        // Generate the 'what` operand (32-bit)
+        generated.push_back(instr.opcode | port);
         generated.push_back(program.solveArgumentAddress(portArg->next));
+        break;
     }
-    else if (instruction == "halt")
-    {
-        generated.push_back(HALT);
-    }
-    else if (instruction == "idle")
-    {
-        generated.push_back(IDLE);
-    }
-    else if (instruction == "add" || instruction == "sub")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("add requires 2 arguments");
 
-        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!arg)
-            throw runtime_error("First argument of add must be the destination register");
+    case ADD:
+    case SUB:
+    case MUL:
+    {
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        validateNumArguments(2);
 
-        const string& reg = arg->reg;
-        MemAddress regBits = regStringToAddress(reg);
-        MemAddress opcode = instruction == "add" ? ADD : "sub" ? SUB : 0;
-        assert(opcode);
-
-        Argument* operand = instr->args->next;
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( operand ))
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args->next ))
         {
             MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(opcode | regBits | REGISTER | srcRegArg);
-        }
-        else if (SymbolArgument* reg_sym = dynamic_cast<SymbolArgument*>( operand ))
-        {
-            generated.push_back(opcode | regBits | IMMEDIATE);
-            generated.push_back(program.solveArgumentAddress(reg_sym));
-        }
-        else if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( operand ))
-        {
-            generated.push_back(opcode | regBits | IMMEDIATE);
-            generated.push_back(reg_int->data);
+            generated.push_back(instr.opcode | regBits | REGISTER | srcRegArg);
         }
         else
         {
-            throw runtime_error("Invalid operand to add instruction");
+            generated.push_back(instr.opcode | regBits | IMMEDIATE);
+            generated.push_back(program.solveArgumentAddress(instr.args->next));
         }
+        break;
     }
-    else if (instruction == "inc" || instruction == "dec")
+
+    case INC:
+    case DEC:
     {
-        if (!instr->args)
-            throw runtime_error("inc requires 1 argument");
-
-        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!arg)
-            throw runtime_error("inc requires a register");
-
-        MemAddress opcode = instruction == "inc" ? INC :
-                            instruction == "dec" ? DEC :
-                            0;
-        assert(opcode);
-
-        const string& reg = arg->reg;
-        MemAddress regBits = regStringToAddress(reg);
-        generated.push_back(opcode | regBits);
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        generated.push_back(instr.opcode | regBits);
+        break;
     }
-    else if (instruction == "mul")
+
+    case SHR:
+    case SHL:
     {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("mul requires 2 arguments");
-
-        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!arg)
-            throw runtime_error("First argument of mul must be the destination register");
-
-        const string& reg = arg->reg;
-        MemAddress regBits = regStringToAddress(reg);
-
-        Argument* operand = instr->args->next;
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( operand ))
+        RegisterArgument* destReg = getFirstReg();
+        MemAddress regBits = argToRegBits(*destReg);
+        validateNumArguments(2);
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args->next ))
         {
             MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(MUL | regBits | REGISTER | srcRegArg);
+            generated.push_back(instr.opcode | regBits | REGISTER | srcRegArg);
         }
         else
         {
-            generated.push_back(MUL | regBits | IMMEDIATE);
-            generated.push_back(program.solveArgumentAddress(instr->args->next));
-        }
-    }
-    else if (instruction == "mulw")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("mulw requires 2 arguments");
-
-        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!arg)
-            throw runtime_error("First argument of mulw must be the destination register");
-
-        Argument* operand = instr->args->next;
-        if (IntegerArgument* reg_int = dynamic_cast<IntegerArgument*>( operand ))
-        {
-            generated.push_back(MULW | IMMEDIATE | reg_int->data);
-        }
-        else
-        {
-            throw runtime_error("Invalid operand to mulw instruction");
-        }
-    }
-    else if (instruction == "shr" || instruction == "shl")
-    {
-        if (!instr->args || !instr->args->next)
-            throw runtime_error("shr/shl requires 2 arguments");
-
-        RegisterArgument* arg = dynamic_cast<RegisterArgument*>( instr->args );
-        if (!arg)
-            throw runtime_error("First argument of shr/shl must be the destination register");
-
-        const string& reg = arg->reg;
-        MemAddress regBits = regStringToAddress(reg);
-
-        MemAddress opcode = instruction == "shr" ? SHR :
-                            instruction == "shl" ? SHL :
-                            0;
-        assert(opcode);
-
-        Argument* operand = instr->args->next;
-        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( operand ))
-        {
-            MemAddress srcRegArg = regStringToAddress(arg_reg->reg) >> INS_REG;
-            generated.push_back(opcode | regBits | REGISTER | srcRegArg);
-        }
-        else
-        {
-            MemAddress value = program.solveArgumentAddress(instr->args->next);
+            MemAddress value = program.solveArgumentAddress(instr.args->next);
             if (value > 32)
                 throw runtime_error("shr/shl operand cannot be greater than 32");
-            generated.push_back(opcode | regBits | IMMEDIATE | value);
+            generated.push_back(instr.opcode | regBits | IMMEDIATE | value);
         }
+        break;
     }
-    else
-    {
+
+    default:
         stringstream msg;
-        msg << "Unrecognized instruction:  " << instruction;
+        msg << "Missing code generation for " << reverseOpcodeTable.at(instr.opcode);
         throw runtime_error(msg.str());
     }
 
     return generated;
+}
+
+void Isa::loadOpcodeTable()
+{
+    string opname;
+
+    #define MAP_OPCODE(OPCODE_CAPS) \
+    opname = #OPCODE_CAPS; \
+    transform(opname.begin(), opname.end(), opname.begin(), ::tolower); \
+    this->opcodeTable[opname] = OPCODE_CAPS; \
+    this->reverseOpcodeTable[OPCODE_CAPS] = opname;
+
+    /* Map pseudo-opcodes (assembler directives) */
+    MAP_OPCODE(DB);
+    MAP_OPCODE(DD);
+
+    /* Map real opcodes */
+    // cpu modes
+    MAP_OPCODE(HALT);
+    MAP_OPCODE(IDLE);
+    MAP_OPCODE(CLI);
+    MAP_OPCODE(STI);
+    MAP_OPCODE(RSTR);
+
+    // control flow
+    MAP_OPCODE(CMP);
+    MAP_OPCODE(TST);
+    MAP_OPCODE(JMP);
+    MAP_OPCODE(LNGJMP);
+    MAP_OPCODE(JE);
+    MAP_OPCODE(JNE);
+    MAP_OPCODE(JGE);
+    MAP_OPCODE(JG);
+    MAP_OPCODE(JLE);
+    MAP_OPCODE(JL);
+    MAP_OPCODE(CALL);
+    MAP_OPCODE(LNGCALL);
+    MAP_OPCODE(RET);
+    MAP_OPCODE(RTI);
+
+    // register movement
+    MAP_OPCODE(MOV);
+
+    // load & store
+    MAP_OPCODE(LOAD);
+    MAP_OPCODE(LOADW);
+    MAP_OPCODE(LOADB);
+    MAP_OPCODE(STR);
+    MAP_OPCODE(STRW);
+    MAP_OPCODE(STRB);
+    MAP_OPCODE(PUSH);
+    MAP_OPCODE(PUSHW);
+    MAP_OPCODE(PUSHB);
+    MAP_OPCODE(POP);
+    MAP_OPCODE(POPW);
+    MAP_OPCODE(POPB);
+    MAP_OPCODE(MEMCPY);
+    MAP_OPCODE(MEMSET);
+    MAP_OPCODE(CLRSET);
+    MAP_OPCODE(CLRSETV);
+
+    // I/O
+    MAP_OPCODE(READ);
+    MAP_OPCODE(WRITE);
+
+    // Math
+    MAP_OPCODE(ADD);
+    MAP_OPCODE(INC);
+    MAP_OPCODE(SUB);
+    MAP_OPCODE(DEC);
+    MAP_OPCODE(MUL);
+    MAP_OPCODE(MULW);
+    MAP_OPCODE(MULB);
+    MAP_OPCODE(SHR);
+    MAP_OPCODE(SHL);
+}
+
+void Isa::loadInstructionSizeTable()
+{
+    // A value of 0 means that the instruction size needs to be determined
+    // dynamically from the type of its arguments.
+    // A value > 0 means that the size of the instruction is constant at that
+    // value, regardless of argument types.
+
+    // CPU modes / special
+    this->instructionSizeTable[HALT] = 4;
+    this->instructionSizeTable[IDLE] = 4;
+    this->instructionSizeTable[CLI]  = 4;
+    this->instructionSizeTable[STI]  = 4;
+    this->instructionSizeTable[RSTR] = 4;
+
+    // Pseudo-opcodes
+    this->instructionSizeTable[DB] = 0;
+    this->instructionSizeTable[DW] = 0;
+    this->instructionSizeTable[DD] = 0;
+
+    // Control flow
+    this->instructionSizeTable[CMP]  = 0;
+    this->instructionSizeTable[TST]  = 4;
+    this->instructionSizeTable[JMP]  = 4;
+    this->instructionSizeTable[JE]   = 4;
+    this->instructionSizeTable[JNE]  = 4;
+    this->instructionSizeTable[CALL] = 4;
+    this->instructionSizeTable[RET]  = 4;
+    this->instructionSizeTable[RTI]  = 4;
+
+    // Register movement
+    this->instructionSizeTable[MOV] = 0;
+
+    // Load & store
+    this->instructionSizeTable[LOAD]    = 0;
+    this->instructionSizeTable[LOADW]   = 0;
+    this->instructionSizeTable[LOADB]   = 0;
+    this->instructionSizeTable[STR]     = 0;
+    this->instructionSizeTable[STRW]    = 4;
+    this->instructionSizeTable[STRB]    = 4;
+    this->instructionSizeTable[PUSH]    = 0;
+    this->instructionSizeTable[PUSHW]   = 4;
+    this->instructionSizeTable[PUSHB]   = 4;
+    this->instructionSizeTable[POP]     = 4;
+    this->instructionSizeTable[POPW]    = 4;
+    this->instructionSizeTable[POPB]    = 4;
+    this->instructionSizeTable[MEMCPY]  = 4;
+    this->instructionSizeTable[MEMSET]  = 4;
+    this->instructionSizeTable[CLRSET]  = 0;
+    this->instructionSizeTable[CLRSETV] = 0;
+
+    // I/O
+    this->instructionSizeTable[READ]  = 4;
+    this->instructionSizeTable[WRITE] = 8;
+
+    // Math
+    this->instructionSizeTable[ADD] = 0;
+    this->instructionSizeTable[INC] = 4;
+    this->instructionSizeTable[SUB] = 0;
+    this->instructionSizeTable[DEC] = 4;
+    this->instructionSizeTable[MUL] = 0;
+    this->instructionSizeTable[SHR] = 4;
+    this->instructionSizeTable[SHL] = 4;
 }
