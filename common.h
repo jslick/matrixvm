@@ -13,6 +13,10 @@
 #  define DEBUG         0
 #endif
 
+#ifndef EMULATOR_PROFILE
+#  define EMULATOR_PROFILE 0
+#endif
+
 // Check validity of instructions
 #ifndef CHECK_INSTR
 #  define CHECK_INSTR   1

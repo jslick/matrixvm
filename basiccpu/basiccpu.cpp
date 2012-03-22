@@ -9,6 +9,9 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#if EMULATOR_PROFILE
+#  include <chrono>
+#endif
 
 using namespace std;
 using namespace machine;
@@ -196,12 +199,24 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
     MemAddress  result;         // value after  a calculation
     MemAddress* dest_reg;       // destination register
 
+    #if EMULATOR_PROFILE
+    typedef chrono::high_resolution_clock Clock;
+    typedef std::chrono::microseconds microseconds;
+
+    Clock::time_point t0 = Clock::now();
+    unsigned long long numInstructions = 0;
+    unsigned long long numInterrupts   = 0;
+    #endif
+
     bool halt = false;
     while (!halt && ip < static_cast<MemAddress>( memory.size() ) - 4)
     {
         // Check for interrupts
         if (this->interruptsEnabled() && this->interrupts.any())
         {
+            #if EMULATOR_PROFILE
+            numInterrupts++;
+            #endif
             for (size_t i = 0; i < this->interrupts.size(); i++)
             {
                 if (this->interrupts.test(i))
@@ -224,6 +239,9 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         }
 
         MemAddress instruction = getInstruction(memory, ip);
+        #if EMULATOR_PROFILE
+        numInstructions++;
+        #endif
 
         switch (instruction & INS_OPCODE_MASK)
         {
@@ -627,6 +645,17 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         printf("ip    = 0x%08x\n\n", static_cast<unsigned int>( ip ));
         #endif
     }
+
+    #if EMULATOR_PROFILE
+    Clock::time_point endtime = Clock::now();
+    microseconds us = std::chrono::duration_cast<microseconds>(endtime - t0);
+    double mhz = static_cast<double>( numInstructions ) / us.count();
+
+    printf("Number of instructions executed:  %12lld\n", numInstructions);
+    printf("Number of microseconds:           %12ld\n", us.count());
+    printf("Calculated MHz:                   %12.3f\n", mhz);
+    printf("Number of interrupts:             %12lld\n", numInterrupts);
+    #endif
 }
 
 void BasicCpu::interrupt(unsigned int line)
