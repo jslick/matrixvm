@@ -14,6 +14,13 @@ define OUTPORT              2
 ; configuration
 define TIMER_INTERVAL   1000000 ; 1Hz
 
+; number of timer interrupts between task scheduling + 1
+define SCHEDULE_INTERVAL    2
+
+; default value for dl register; this is the number of microseconds to sleep in
+; an IDLE
+define DEFAULT_DL       100000
+
 ; Each task has these fields:
 ; magic             : 4 bytes
 ; pid               : 2 bytes
@@ -29,9 +36,6 @@ define BYTES_PER_TASK    68
 define TASK_REGS_OFFSET   8 ; wouldn't need this if defines could accept expressions
 
 define STACK_PER_TASK   4 * 1024
-
-; number of timer interrupts between task scheduling + 1
-define SCHEDULE_INTERVAL    2
 
 current_task:
     dd      0
@@ -56,6 +60,9 @@ os_start:
     mov     r4, start_message
     mov     r5, start_message_end - start_message
     call    print
+
+    ; set up dl register
+    mov     dl, DEFAULT_DL
 
     ; set up timer interrupt handler
     write   TIMER_PIN, TIMER_INTERVAL   ; set up interrupt interval
