@@ -27,6 +27,7 @@
 #define R4  (  4 << INS_REG )
 #define R5  (  5 << INS_REG )
 #define R6  (  6 << INS_REG )
+#define R7  (  7 << INS_REG )
 #define SP  ( 11 << INS_REG )
 #define LR  ( 12 << INS_REG )
 #define IP  ( 13 << INS_REG )

@@ -76,6 +76,7 @@ private:
     MemAddress r4;
     MemAddress r5;
     MemAddress r6;
+    MemAddress r7;
     MemAddress sp;
     MemAddress lr;
     MemAddress ip;

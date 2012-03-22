@@ -171,6 +171,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
     registers[4]  = &r4;
     registers[5]  = &r5;
     registers[6]  = &r6;
+    registers[7]  = &r7;
     registers[SP >> INS_REG] = &sp;
     registers[LR >> INS_REG] = &lr;
     registers[IP >> INS_REG] = &ip;

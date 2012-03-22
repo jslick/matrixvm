@@ -47,6 +47,7 @@ static inline MemAddress regStringToAddress(const string& regStr)
            regStr == "r4" ? R4 :
            regStr == "r5" ? R5 :
            regStr == "r6" ? R6 :
+           regStr == "r7" ? R7 :
            regStr == "sp" ? SP :
            regStr == "lr" ? LR :
            regStr == "dl" ? DL :

@@ -73,7 +73,7 @@ char        \'\\?[^']\'
     /* Registers */
 %}
 
-"r"[1-6] {
+"r"[1-7] {
     DEBUGF("R%d\n", yytext[1]);
     switch (yytext[1])
     {
@@ -89,6 +89,8 @@ char        \'\\?[^']\'
         return R5;
     case '6':
         return R6;
+    case '7':
+        return R7;
     }
 }
 

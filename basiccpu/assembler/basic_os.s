@@ -19,7 +19,7 @@ define TIMER_INTERVAL   1000000 ; 1Hz
 ; pid               : 2 bytes
 ; ppid              : 2 bytes
 ; saved registers   : 4 bytes * 15
-;  * r1 - r6
+;  * r1 - r7
 ;  * reserved regs
 ;  * sp, ip, lr, dl, st
 ; = 64 bytes
@@ -226,7 +226,7 @@ create_task:
     push     0  ; reserved reg
     push     0  ; reserved reg
     push     0  ; reserved reg
-    push     0  ; reserved reg
+    push     0  ; push r7
     push     0  ; push r6
     push     0  ; push r5
     push     0  ; push r4
@@ -294,7 +294,7 @@ fork:
     push     0
     push     0
     push     0
-    push     0
+    push    r7
     push    r6
     push    r5
     push    r4
