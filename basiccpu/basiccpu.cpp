@@ -263,6 +263,30 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
                 reljump(instruction & 0xFFFF, ip);
             break;
 
+        case JGE:
+            BCPU_DBGI("jge", "relative");
+            if (result >= 0)
+                reljump(instruction & 0xFFFF, ip);
+            break;
+
+        case JG:
+            BCPU_DBGI("jg", "relative");
+            if (result > 0)
+                reljump(instruction & 0xFFFF, ip);
+            break;
+
+        case JLE:
+            BCPU_DBGI("jle", "relative");
+            if (result <= 0)
+                reljump(instruction & 0xFFFF, ip);
+            break;
+
+        case JL:
+            BCPU_DBGI("jl", "relative");
+            if (result < 0)
+                reljump(instruction & 0xFFFF, ip);
+            break;
+
         case CALL:
             BCPU_DBGI("call", "relative");
             // save current lr

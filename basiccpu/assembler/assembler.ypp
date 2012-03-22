@@ -39,7 +39,7 @@ extern Isa*     isa;
 %token DEFINE
 %token R1 R2 R3 R4 R5 R6 R7 SP LR DL ST
 %token HALT IDLE STI CLI RSTR
-%token CMP TST JMP JE JNE CALL RET RTI
+%token CMP TST JMP JE JNE JGE JG JLE JL CALL RET RTI
 %token MOV
 %token LOAD LOADB STR STRB PUSH PUSHW PUSHB POP POPW POPB MEMCPY MEMSET CLRSET CLRSETV
 %token READ WRITE
@@ -104,6 +104,10 @@ opcode
     | JMP                           { $$ = "jmp"; }
     | JE                            { $$ = "je"; }
     | JNE                           { $$ = "jne"; }
+    | JGE                           { $$ = "jge"; }
+    | JG                            { $$ = "jg"; }
+    | JLE                           { $$ = "jle"; }
+    | JL                            { $$ = "jl"; }
     | CALL                          { $$ = "call"; }
     | RET                           { $$ = "ret"; }
     | CLI                           { $$ = "cli"; }

@@ -71,7 +71,7 @@ MemAddress Isa::getOpcode(const std::string& instruction)
     catch (out_of_range& e)
     {
         stringstream msg;
-        msg << "No opcode " << instruction << " in opcode table";
+        msg << "No opcode `" << instruction << "` in opcode table";
         throw runtime_error(msg.str());
     }
 }
@@ -91,7 +91,7 @@ int Isa::calcInstructionSize(Instruction& instr)
     catch (out_of_range& e)
     {
         stringstream msg;
-        msg << "Missing instruction size for " << reverseOpcodeTable.at(instr.opcode);
+        msg << "Missing instruction size for `" << reverseOpcodeTable.at(instr.opcode) << "`";
         throw runtime_error(msg.str());
     }
 
@@ -99,7 +99,7 @@ int Isa::calcInstructionSize(Instruction& instr)
         if (!instr.args)
         {
             stringstream msg;
-            msg << "Missing argument for " << reverseOpcodeTable.at(instr.opcode);
+            msg << "Missing argument for `" << reverseOpcodeTable.at(instr.opcode) << "`";
             throw runtime_error(msg.str());
         }
         return dynamic_cast<RegisterArgument*>( instr.args ) ? true : false;
@@ -109,7 +109,7 @@ int Isa::calcInstructionSize(Instruction& instr)
         if (!instr.args)
         {
             stringstream msg;
-            msg << "Missing argument for " << reverseOpcodeTable.at(instr.opcode);
+            msg << "Missing argument for `" << reverseOpcodeTable.at(instr.opcode) << "`";
             throw runtime_error(msg.str());
         }
         if (!instr.args->next)
@@ -157,7 +157,7 @@ int Isa::calcInstructionSize(Instruction& instr)
 
     default:
         stringstream msg;
-        msg << "Missing dynamic instruction size for " << reverseOpcodeTable.at(instr.opcode);
+        msg << "Missing dynamic instruction size for `" << reverseOpcodeTable.at(instr.opcode) << "`";
         throw runtime_error(msg.str());
         assert(0 /* should have returned before entering the switch */);
     }
@@ -262,6 +262,10 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     case JMP:
     case JE:
     case JNE:
+    case JGE:
+    case JG:
+    case JLE:
+    case JL:
     case CALL:
     {
         validateNumArguments(1);
@@ -524,7 +528,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
 
     default:
         stringstream msg;
-        msg << "Missing code generation for " << reverseOpcodeTable.at(instr.opcode);
+        msg << "Missing code generation for `" << reverseOpcodeTable.at(instr.opcode) << "`";
         throw runtime_error(msg.str());
     }
 
@@ -631,6 +635,10 @@ void Isa::loadInstructionSizeTable()
     this->instructionSizeTable[JMP]  = 4;
     this->instructionSizeTable[JE]   = 4;
     this->instructionSizeTable[JNE]  = 4;
+    this->instructionSizeTable[JGE]  = 4;
+    this->instructionSizeTable[JG]   = 4;
+    this->instructionSizeTable[JLE]  = 4;
+    this->instructionSizeTable[JL]   = 4;
     this->instructionSizeTable[CALL] = 4;
     this->instructionSizeTable[RET]  = 4;
     this->instructionSizeTable[RTI]  = 4;

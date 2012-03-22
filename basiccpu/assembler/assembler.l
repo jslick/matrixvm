@@ -143,6 +143,26 @@ char        \'\\?[^']\'
     return JNE;
 }
 
+"jge" {
+    DEBUGF("JGE\n");
+    return JGE;
+}
+
+"jg" {
+    DEBUGF("JG\n");
+    return JG;
+}
+
+"jle" {
+    DEBUGF("JLE\n");
+    return JLE;
+}
+
+"jl" {
+    DEBUGF("JL\n");
+    return JL;
+}
+
 "call" {
     DEBUGF("CALL\n");
     return CALL;
