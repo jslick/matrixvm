@@ -318,6 +318,21 @@ char        \'\\?[^']\'
     return MULW;
 }
 
+"and" {
+    DEBUGF("AND\n");
+    return AND;
+}
+
+"or" {
+    DEBUGF("OR\n");
+    return OR;
+}
+
+"not" {
+    DEBUGF("NOT\n");
+    return NOT;
+}
+
 "shr" {
     DEBUGF("SHR\n");
     return SHR;

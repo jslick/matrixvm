@@ -153,6 +153,9 @@ int Isa::calcInstructionSize(Instruction& instr)
     case ADD:
     case SUB:
     case MUL:
+    case AND:
+    case OR:
+    case NOT:
         return arg2IsRegister() ? 4 : 8;
 
     default:
@@ -478,6 +481,9 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     case ADD:
     case SUB:
     case MUL:
+    case AND:
+    case OR:
+    case NOT:
     {
         RegisterArgument* destReg = getFirstReg();
         MemAddress regBits = argToRegBits(*destReg);
@@ -606,6 +612,9 @@ void Isa::loadOpcodeTable()
     MAP_OPCODE(MUL);
     MAP_OPCODE(MULW);
     MAP_OPCODE(MULB);
+    MAP_OPCODE(AND);
+    MAP_OPCODE(OR);
+    MAP_OPCODE(NOT);
     MAP_OPCODE(SHR);
     MAP_OPCODE(SHL);
 }
@@ -674,6 +683,9 @@ void Isa::loadInstructionSizeTable()
     this->instructionSizeTable[SUB] = 0;
     this->instructionSizeTable[DEC] = 4;
     this->instructionSizeTable[MUL] = 0;
+    this->instructionSizeTable[AND] = 0;
+    this->instructionSizeTable[OR]  = 0;
+    this->instructionSizeTable[NOT] = 0;
     this->instructionSizeTable[SHR] = 4;
     this->instructionSizeTable[SHL] = 4;
 }

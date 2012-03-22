@@ -550,6 +550,21 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             result = *dest_reg *= instr_operand;
             break;
 
+        case AND:
+            instr_mode = getMode(instruction);
+            BCPU_DBGI("and", modeToString(instr_mode));
+
+            dest_reg = registers[EXTRACT_REG(instruction)];
+            before = *dest_reg;
+
+            if (instr_mode == IMMEDIATE)
+                result = *dest_reg &= getInstruction(memory, ip);
+            else if (instr_mode == REGISTER)
+                result = *dest_reg &= *registers[EXTRACT_SRC_REG(instruction)];
+            else
+                /* TODO:  generate instruction fault */;
+            break;
+
         case SHR:
             instr_mode = getMode(instruction);
             BCPU_DBGI("shr", modeToString(instr_mode));

@@ -111,7 +111,10 @@
 #define MUL     ( 0x68 << INS_OPCODE )
 #define MULW    ( 0x69 << INS_OPCODE )
 #define MULB    ( 0x6a << INS_OPCODE )
-#define SHR     ( 0x6b << INS_OPCODE )
-#define SHL     ( 0x6c << INS_OPCODE )
+#define AND     ( 0x6b << INS_OPCODE )
+#define OR      ( 0x6c << INS_OPCODE )
+#define NOT     ( 0x6d << INS_OPCODE )
+#define SHR     ( 0x6e << INS_OPCODE )
+#define SHL     ( 0x6f << INS_OPCODE )
 
 #endif // OPCODES
