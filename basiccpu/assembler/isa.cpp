@@ -395,8 +395,8 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     {
         validateNumArguments(3);
         RegisterArgument* destReg = dynamic_cast<RegisterArgument*>( instr.args );
-        RegisterArgument* srcReg = dynamic_cast<RegisterArgument*>( destReg->next );
-        RegisterArgument* lenReg = dynamic_cast<RegisterArgument*>( srcReg->next );
+        RegisterArgument* srcReg = dynamic_cast<RegisterArgument*>( instr.args->next );
+        RegisterArgument* lenReg = dynamic_cast<RegisterArgument*>( instr.args->next->next );
         if (!destReg || !srcReg || !lenReg)
             throw runtime_error("Invalid argument given to memcpy");
 
