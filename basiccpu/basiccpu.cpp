@@ -534,9 +534,9 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             before = *dest_reg;
 
             if (instr_mode == IMMEDIATE)
-                result = *dest_reg >>= instruction & 0x3F;
+                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) >> (instruction & 0x3F);
             else if (instr_mode == REGISTER)
-                result = *dest_reg >>= *registers[EXTRACT_SRC_REG(instruction)];
+                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) >> *registers[EXTRACT_SRC_REG(instruction)];
             else
                 /* TODO:  generate instruction fault */;
             break;
@@ -549,9 +549,9 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             before = *dest_reg;
 
             if (instr_mode == IMMEDIATE)
-                result = *dest_reg <<= instruction & 0x3F;
+                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) << (instruction & 0x3F);
             else if (instr_mode == REGISTER)
-                result = *dest_reg <<= *registers[EXTRACT_SRC_REG(instruction)];
+                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) << *registers[EXTRACT_SRC_REG(instruction)];
             else
                 /* TODO:  generate instruction fault */;
             break;
@@ -582,6 +582,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         printf("r4    = 0x%08x\n", r4);
         printf("r5    = 0x%08x\n", r5);
         printf("r6    = 0x%08x\n", r6);
+        printf("r7    = 0x%08x\n", r7);
         printf("sp    = 0x%08x\n", static_cast<unsigned int>( sp ));
         printf("lr    = 0x%08x\n", static_cast<unsigned int>( lr ));
         printf("ip    = 0x%08x\n\n", static_cast<unsigned int>( ip ));
