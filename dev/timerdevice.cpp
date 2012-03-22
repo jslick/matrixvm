@@ -58,12 +58,20 @@ void TimerDevice::runTimer()
 
     while (this->run)
     {
+        if (!this->interval)
+        {
+            // Need better solution to resume timer; we'll do with this hack for now
+            usleep(500000);
+            continue;
+        }
+
         if (this->interval < TimerDevice::MIN_INTERVAL)
             this->interval = TimerDevice::MIN_INTERVAL;
         if (this->interval >= 1000000)
             this->interval = 999999; // maximum value for usleep
 
         usleep(this->interval);
-        ic->interrupt(TIMER_INT_LINE);
+        if (this->interval)
+            ic->interrupt(TIMER_INT_LINE);
     }
 }
