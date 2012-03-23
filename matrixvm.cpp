@@ -167,8 +167,10 @@ void readFile(const char* filename, uint8_t*& contents, int& fileSize)
     fileSize = getFileLength(file);
     contents = new uint8_t[fileSize];
 
-    fread(contents, fileSize, 1, file);
+    size_t numItems = fread(contents, fileSize, 1, file);
     fclose(file);
+    if (numItems < 1)
+        throw runtime_error("Failed to read bios file");
 }
 
 int getFileLength(FILE* file)

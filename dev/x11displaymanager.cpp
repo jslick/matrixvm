@@ -102,8 +102,6 @@ void X11DisplayManager::createWindow(int width, int height)
 void X11DisplayManager::eventListen()
 {
     XEvent event;
-    KeySym key;
-    char text[255]; /* a char buffer for KeyPress Events */
 
     int x11_fd = ConnectionNumber(this->display);
     fd_set in_fds;
