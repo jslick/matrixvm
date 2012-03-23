@@ -673,7 +673,7 @@ void BasicCpu::pushRegisters(std::vector<uint8_t>& memory, MemAddress& ip)
     push(memory, sp, 0);
     push(memory, sp, 0);
     push(memory, sp, 0);
-    push(memory, sp, 0);
+    push(memory, sp, r7);
     push(memory, sp, r6);
     push(memory, sp, r5);
     push(memory, sp, r4);
@@ -692,7 +692,8 @@ void BasicCpu::restoreRegisters(std::vector<uint8_t>& memory, MemAddress& ip)
     r4  = pop(memory, sp);
     r5  = pop(memory, sp);
     r6  = pop(memory, sp);
-    sp += 4 * 4;
+    r7  = pop(memory, sp);
+    sp += 4 * 3;
     restoredSp = pop(memory, sp);
     lr  = pop(memory, sp);
     ip  = pop(memory, sp);
