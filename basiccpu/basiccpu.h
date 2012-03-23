@@ -35,6 +35,38 @@ public:
 
     void interrupt(unsigned int line);
 
+    /*
+     * 32-bit integer guest code is pre-decoded into this structure
+     */
+    struct Instruction {
+        #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+        union {
+            unsigned operand    :16;
+            struct {
+                unsigned src2 :8;
+                unsigned src1 :8;
+            } __attribute__((packed)) sources;
+        } __attribute__((packed));
+        unsigned destreg        :4;
+        unsigned /* pad */      :1;
+        unsigned addrmode       :3;
+        unsigned opcode         :8;
+        #else
+        // NOTE:  big endian not tested!
+        unsigned opcode         :8;
+        unsigned addrmode       :3;
+        unsigned /* pad */      :1;
+        unsigned destreg        :4;
+        union {
+            unsigned operand    :16;
+            struct {
+                unsigned src1 :8;
+                unsigned src2 :8;
+            }  __attribute__((packed)) sources;
+        } __attribute__((packed));
+        #endif
+    } __attribute__((packed));
+
 protected:
 
     inline bool interruptsEnabled() const

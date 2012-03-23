@@ -61,7 +61,15 @@ static inline void updateMemory16(
     memory[location + 1] = (what & 0x00FF) >> 0;
 }
 
-static inline MemAddress getInstruction(vector<uint8_t>& memory, MemAddress& ip)
+static inline BasicCpu::Instruction getInstruction(vector<uint8_t>& memory, MemAddress& ip)
+{
+    ip += 4;
+    MemAddress bytes = getMemory32(memory, ip - 4);
+    BasicCpu::Instruction* instruction = reinterpret_cast<BasicCpu::Instruction*>( &bytes );
+    return *instruction;
+}
+
+static inline MemAddress getWord(vector<uint8_t>& memory, MemAddress& ip)
 {
     ip += 4;
     return getMemory32(memory, ip - 4);
@@ -135,9 +143,21 @@ static inline MemAddress getMode(MemAddress instruction)
  */
 static const char* modeToString(MemAddress mode)
 {
-    return mode == IMMEDIATE ? "immediate" :
-           mode == REGISTER  ? "register"  :
-           0;
+    switch (mode)
+    {
+    case ABSOLUTE  >> INS_ADDR:
+        return "absolute";
+    case RELATIVE  >> INS_ADDR:
+        return "relative";
+    case IMMEDIATE >> INS_ADDR:
+        return "immediate";
+    case REGISTER  >> INS_ADDR:
+        return "register";
+    case INDIRECT  >> INS_ADDR:
+        return "indirect";
+    default:
+        return 0;
+    }
 }
 #endif
 
@@ -150,6 +170,9 @@ string BasicCpu::getName() const
 
 void BasicCpu::start(Motherboard& mb, MemAddress addr)
 {
+    if (sizeof(BasicCpu::Instruction) != sizeof(MemAddress))
+        throw runtime_error("Pre-decoding error");
+
     this->ip = addr;
 
     vector<uint8_t>& memory = Device::getMemory(mb);
@@ -192,11 +215,9 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
     #endif
 
     /* Loop variables */
-    MemAddress  instr_mode;     // mode of an instruction
-    int16_t     instr_operand;  // an operand part of an instruction
     MemAddress  operand;        // a pointer-size operand following an instruction
     MemAddress  before;         // value before a calculation
-    MemAddress  result;         // value after  a calculation
+    MemAddress  result = 0;     // value after  a calculation
     MemAddress* dest_reg;       // destination register
 
     #if EMULATOR_PROFILE
@@ -238,83 +259,85 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             }
         }
 
-        MemAddress instruction = getInstruction(memory, ip);
+        Instruction instruction = getInstruction(memory, ip);
         #if EMULATOR_PROFILE
         numInstructions++;
         #endif
 
-        switch (instruction & INS_OPCODE_MASK)
-        {
-        case CMP:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("cmp", modeToString(instr_mode));
+        #define CONVERT_OPCODE(OPCODE)  ( OPCODE >> INS_OPCODE )
+        #define CONVERT_MODE(MODE)      ( MODE   >> INS_ADDR )
 
-            before = *registers[EXTRACT_REG(instruction)];
-            if (instr_mode == IMMEDIATE)
-                result = before - getInstruction(memory, ip);
-            else if (instr_mode == REGISTER)
-                result = before - *registers[EXTRACT_SRC_REG(instruction)];
+        switch (instruction.opcode)
+        {
+        case CONVERT_OPCODE(CMP):
+            BCPU_DBGI("cmp", modeToString(instruction.addrmode));
+
+            before = *registers[instruction.destreg];
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                result = before - getWord(memory, ip);
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                result = before - *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
 
             break;
 
-        case TST:
+        case CONVERT_OPCODE(TST):
             BCPU_DBGI("tst", 0);
-            result = before = *registers[EXTRACT_REG(instruction)];
+            result = before = *registers[instruction.destreg];
             break;
 
-        case JMP:
+        case CONVERT_OPCODE(JMP):
             BCPU_DBGI("jmp", "relative");
-            reljump(instruction & 0xFFFF, ip);
+            reljump(instruction.operand, ip);
             break;
 
-        case JE:
+        case CONVERT_OPCODE(JE):
             BCPU_DBGI("je", "relative");
             if (result == 0)
-                reljump(instruction & 0xFFFF, ip);
+                reljump(instruction.operand, ip);
             break;
 
-        case JNE:
+        case CONVERT_OPCODE(JNE):
             BCPU_DBGI("jne", "relative");
             if (result != 0)
-                reljump(instruction & 0xFFFF, ip);
+                reljump(instruction.operand, ip);
             break;
 
-        case JGE:
+        case CONVERT_OPCODE(JGE):
             BCPU_DBGI("jge", "relative");
             if (result >= 0)
-                reljump(instruction & 0xFFFF, ip);
+                reljump(instruction.operand, ip);
             break;
 
-        case JG:
+        case CONVERT_OPCODE(JG):
             BCPU_DBGI("jg", "relative");
             if (result > 0)
-                reljump(instruction & 0xFFFF, ip);
+                reljump(instruction.operand, ip);
             break;
 
-        case JLE:
+        case CONVERT_OPCODE(JLE):
             BCPU_DBGI("jle", "relative");
             if (result <= 0)
-                reljump(instruction & 0xFFFF, ip);
+                reljump(instruction.operand, ip);
             break;
 
-        case JL:
+        case CONVERT_OPCODE(JL):
             BCPU_DBGI("jl", "relative");
             if (result < 0)
-                reljump(instruction & 0xFFFF, ip);
+                reljump(instruction.operand, ip);
             break;
 
-        case CALL:
+        case CONVERT_OPCODE(CALL):
             BCPU_DBGI("call", "relative");
             // save current lr
             push(memory, sp, lr);
             // save instruction pointer to link register
             lr = ip;
-            reljump(instruction & 0xFFFF, ip);
+            reljump(instruction.operand, ip);
             break;
 
-        case RET:
+        case CONVERT_OPCODE(RET):
             BCPU_DBGI("ret", 0);
             // return by restoring ip from lr
             ip = lr;
@@ -322,305 +345,287 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             lr = pop(memory, sp);
             break;
 
-        case RTI:
+        case CONVERT_OPCODE(RTI):
             BCPU_DBGI("rti", 0);
             // restore registers
             restoreRegisters(memory, ip);
             break;
 
-        case CLI:
+        case CONVERT_OPCODE(CLI):
             BCPU_DBGI("cli", 0);
             this->st &= ~STATUS_INTERRUPT_MASK;
             break;
 
-        case STI:
+        case CONVERT_OPCODE(STI):
             BCPU_DBGI("sti", 0);
             this->st |= STATUS_INTERRUPT_MASK;
             break;
 
-        case RSTR:
+        case CONVERT_OPCODE(RSTR):
             BCPU_DBGI("rstr", "register");
-            operand = *registers[EXTRACT_REG(instruction)];
+            operand = *registers[instruction.destreg];
             for (unsigned int i = 1; i < registers.size(); i++)
                 *registers[i] = getMemory32(memory, operand + (i-1) * 4);
             break;
 
-        case MOV:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("mov", modeToString(instr_mode));
-            if (instr_mode == IMMEDIATE)
-                *registers[EXTRACT_REG(instruction)] = getInstruction(memory, ip);
-            else if (instr_mode == REGISTER)
-                *registers[EXTRACT_REG(instruction)] = *registers[EXTRACT_SRC_REG(instruction)];
+        case CONVERT_OPCODE(MOV):
+            BCPU_DBGI("mov", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                *registers[instruction.destreg] = getWord(memory, ip);
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                *registers[instruction.destreg] = *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
             break;
 
-        case LOAD:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("load", modeToString(instr_mode));
-            if (instr_mode == ABSOLUTE)
-                *registers[EXTRACT_REG(instruction)] = getMemory32(memory, getInstruction(memory, ip));
-            else if (instr_mode == INDIRECT)
-                *registers[EXTRACT_REG(instruction)] = getMemory32(memory, *registers[EXTRACT_SRC_REG(instruction)]);
+        case CONVERT_OPCODE(LOAD):
+            BCPU_DBGI("load", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(ABSOLUTE))
+                *registers[instruction.destreg] = getMemory32(memory, getWord(memory, ip));
+            else if (instruction.addrmode == CONVERT_MODE(INDIRECT))
+                *registers[instruction.destreg] = getMemory32(memory, *registers[instruction.sources.src2]);
             break;
 
-        case LOADB:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("loadb", modeToString(instr_mode));
-            if (instr_mode == ABSOLUTE)
-                *registers[EXTRACT_REG(instruction)] = memory[getInstruction(memory, ip)];
-            else if (instr_mode == INDIRECT)
-                *registers[EXTRACT_REG(instruction)] = memory[*registers[EXTRACT_SRC_REG(instruction)]];
+        case CONVERT_OPCODE(LOADB):
+            BCPU_DBGI("loadb", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(ABSOLUTE))
+                *registers[instruction.destreg] = memory[getWord(memory, ip)];
+            else if (instruction.addrmode == CONVERT_MODE(INDIRECT))
+                *registers[instruction.destreg] = memory[*registers[instruction.sources.src2]];
             break;
 
-        case STR:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("str", modeToString(instr_mode));
-            if (instr_mode == IMMEDIATE)
-                updateMemory32(memory, *registers[EXTRACT_REG(instruction)], getInstruction(memory, ip));
-            else if (instr_mode == REGISTER)
-                updateMemory32(memory, *registers[EXTRACT_REG(instruction)], *registers[EXTRACT_SRC_REG(instruction)]);
+        case CONVERT_OPCODE(STR):
+            BCPU_DBGI("str", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                updateMemory32(memory, *registers[instruction.destreg], getWord(memory, ip));
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                updateMemory32(memory, *registers[instruction.destreg], *registers[instruction.sources.src2]);
             else
                 /* TODO:  generate instruction fault */;
             break;
 
-        case STRB:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("strb", modeToString(instr_mode));
-            if (instr_mode == IMMEDIATE)
-                memory[*registers[EXTRACT_REG(instruction)]] = instruction & 0xFFFF;
-            else if (instr_mode == REGISTER)
-                memory[*registers[EXTRACT_REG(instruction)]] = *registers[EXTRACT_SRC_REG(instruction)];
+        case CONVERT_OPCODE(STRB):
+            BCPU_DBGI("strb", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                memory[*registers[instruction.destreg]] = instruction.operand;
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                memory[*registers[instruction.destreg]] = *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
             break;
 
-        case PUSH:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("push", modeToString(instr_mode));
-            if (instr_mode == IMMEDIATE)
-                push(memory, sp, getInstruction(memory, ip));
-            else if (instr_mode == REGISTER)
-                push(memory, sp, *registers[EXTRACT_SRC_REG(instruction)]);
+        case CONVERT_OPCODE(PUSH):
+            BCPU_DBGI("push", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                push(memory, sp, getWord(memory, ip));
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                push(memory, sp, *registers[instruction.sources.src2]);
             else
                 /* TODO:  generate instruction fault */;
 
             break;
 
-        case POP:
+        case CONVERT_OPCODE(POP):
             BCPU_DBGI("pop", 0);
-            *registers[EXTRACT_REG(instruction)] = pop(memory, sp);
+            *registers[instruction.destreg] = pop(memory, sp);
             break;
 
-        case PUSHW:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("pushw", modeToString(instr_mode));
-            if (instr_mode == IMMEDIATE)
-                push16(memory, sp, instruction & 0xFFFF);
-            else if (instr_mode == REGISTER)
-                push16(memory, sp, *registers[EXTRACT_SRC_REG(instruction)]);
+        case CONVERT_OPCODE(PUSHW):
+            BCPU_DBGI("pushw", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                push16(memory, sp, instruction.operand);
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                push16(memory, sp, *registers[instruction.sources.src2]);
             else
                 /* TODO:  generate instruction fault */;
 
             break;
 
-        case READ:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("read", modeToString(instr_mode));
-            if (instr_mode == IMMEDIATE)
-                *registers[EXTRACT_REG(instruction)] = ic ? ic->getPin(instruction & 0xFFFF) : 0;
+        case CONVERT_OPCODE(READ):
+            BCPU_DBGI("read", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                *registers[instruction.destreg] = ic ? ic->getPin(instruction.operand) : 0;
             else
                 /* TODO: generate instruction fault */;
             break;
 
-        case WRITE:
+        case CONVERT_OPCODE(WRITE):
             BCPU_DBGI("write", "immediate");
-            instr_operand = instruction & 0xFFFF;
-            operand = getInstruction(memory, ip);
-            Device::writeMb(mb, instr_operand, operand);
+            Device::writeMb(mb, instruction.operand, getWord(memory, ip));
             break;
 
-        case MEMCPY:
+        case CONVERT_OPCODE(MEMCPY):
             BCPU_DBGI("memcpy", "register");
             {
-                MemAddress* destReg = registers[EXTRACT_REG(instruction)];
-                MemAddress* srcReg  = registers[(instruction & 0xFF00) >> 8];
-                MemAddress* lenReg  = registers[EXTRACT_SRC_REG(instruction)];
+                MemAddress* destReg = registers[instruction.destreg];
+                MemAddress* srcReg  = registers[instruction.sources.src1];
+                MemAddress* lenReg  = registers[instruction.sources.src2];
                 for (int i = 0; i < *lenReg; i++)
                     memory[*destReg + i] = memory[*srcReg + i];
             }
             break;
 
-        case MEMSET:
+        case CONVERT_OPCODE(MEMSET):
             BCPU_DBGI("memset", "register");
             {
-                MemAddress* destReg = registers[EXTRACT_REG(instruction)];
-                MemAddress* srcReg  = registers[(instruction & 0xFF00) >> 8];
-                MemAddress* lenReg  = registers[EXTRACT_SRC_REG(instruction)];
+                MemAddress* destReg = registers[instruction.destreg];
+                MemAddress* srcReg  = registers[instruction.sources.src1];
+                MemAddress* lenReg  = registers[instruction.sources.src2];
                 for (int i = 0; i < *lenReg; i++)
                     memory[*destReg + i] = *srcReg;
             }
             break;
 
-        case CLRSET:
-            instr_mode = getMode(instruction);
-            if (instr_mode == IMMEDIATE)
-                this->colorset(memory, getInstruction(memory, ip));
-            else if (instr_mode == REGISTER) // this mode is untested
-                this->colorset(memory, *registers[EXTRACT_SRC_REG(instruction)]);
+        case CONVERT_OPCODE(CLRSET):
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                this->colorset(memory, getWord(memory, ip));
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER)) // this mode is untested
+                this->colorset(memory, *registers[instruction.sources.src2]);
             else
                 /* TODO:  generate instruction fault */;
-            BCPU_DBGI("clrset", modeToString(instr_mode));
+            BCPU_DBGI("clrset", modeToString(instruction.addrmode));
             break;
 
-        case CLRSETV:
-            instr_mode = getMode(instruction);
-            if (instr_mode == IMMEDIATE)
-                this->colorsetVertical(memory, getInstruction(memory, ip));
-            else if (instr_mode == REGISTER) // this mode is untested
-                this->colorsetVertical(memory, *registers[EXTRACT_SRC_REG(instruction)]);
+        case CONVERT_OPCODE(CLRSETV):
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                this->colorsetVertical(memory, getWord(memory, ip));
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER)) // this mode is untested
+                this->colorsetVertical(memory, *registers[instruction.sources.src2]);
             else
                 /* TODO:  generate instruction fault */;
-            BCPU_DBGI("clrsetv", modeToString(instr_mode));
+            BCPU_DBGI("clrsetv", modeToString(instruction.addrmode));
             break;
 
-        case HALT:
+        case CONVERT_OPCODE(HALT):
             BCPU_DBGI("halt", 0);
             halt = true;
             break;
 
-        case IDLE:
+        case CONVERT_OPCODE(IDLE):
             BCPU_DBGI("idle", 0);
             usleep(dl);
             break;
 
-        case ADD:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("add", modeToString(instr_mode));
+        case CONVERT_OPCODE(ADD):
+            BCPU_DBGI("add", modeToString(instruction.addrmode));
 
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
-            if (instr_mode == IMMEDIATE)
-                result = *dest_reg += getInstruction(memory, ip);
-            else if (instr_mode == REGISTER)
-                result = *dest_reg += *registers[EXTRACT_SRC_REG(instruction)];
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                result = *dest_reg += getWord(memory, ip);
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                result = *dest_reg += *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
             break;
 
-        case INC:
+        case CONVERT_OPCODE(INC):
             BCPU_DBGI("inc", 0);
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
             result = ++(*dest_reg);
 
             break;
 
-        case DEC:
+        case CONVERT_OPCODE(DEC):
             BCPU_DBGI("dec", 0);
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
             result = --(*dest_reg);
 
             break;
 
-        case SUB:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("sub", modeToString(instr_mode));
+        case CONVERT_OPCODE(SUB):
+            BCPU_DBGI("sub", modeToString(instruction.addrmode));
 
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
-            if (instr_mode == IMMEDIATE)
-                result = *dest_reg -= getInstruction(memory, ip);
-            else if (instr_mode == REGISTER)
-                result = *dest_reg -= *registers[EXTRACT_SRC_REG(instruction)];
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                result = *dest_reg -= getWord(memory, ip);
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                result = *dest_reg -= *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
             break;
 
-        case MUL:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("mul", modeToString(instr_mode));
+        case CONVERT_OPCODE(MUL):
+            BCPU_DBGI("mul", modeToString(instruction.addrmode));
 
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
-            if (instr_mode == IMMEDIATE)
-                result = *dest_reg *= getInstruction(memory, ip);
-            else if (instr_mode == REGISTER)
-                result = *dest_reg *= *registers[EXTRACT_SRC_REG(instruction)];
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                result = *dest_reg *= getWord(memory, ip);
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                result = *dest_reg *= *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
             break;
 
-        case MULW:
+        case CONVERT_OPCODE(MULW):
             BCPU_DBGI("mulw", "immediate");
 
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
-            instr_operand = instruction & 0xFFFF;
-            result = *dest_reg *= instr_operand;
+            result = *dest_reg *= instruction.operand;
             break;
 
-        case AND:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("and", modeToString(instr_mode));
+        case CONVERT_OPCODE(AND):
+            BCPU_DBGI("and", modeToString(instruction.addrmode));
 
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
-            if (instr_mode == IMMEDIATE)
-                result = *dest_reg &= getInstruction(memory, ip);
-            else if (instr_mode == REGISTER)
-                result = *dest_reg &= *registers[EXTRACT_SRC_REG(instruction)];
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                result = *dest_reg &= getWord(memory, ip);
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                result = *dest_reg &= *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
             break;
 
-        case SHR:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("shr", modeToString(instr_mode));
+        case CONVERT_OPCODE(SHR):
+            BCPU_DBGI("shr", modeToString(instruction.addrmode));
 
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
-            if (instr_mode == IMMEDIATE)
-                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) >> (instruction & 0x3F);
-            else if (instr_mode == REGISTER)
-                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) >> *registers[EXTRACT_SRC_REG(instruction)];
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) >> instruction.sources.src2;
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) >> *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
             break;
 
-        case SHL:
-            instr_mode = getMode(instruction);
-            BCPU_DBGI("shl", modeToString(instr_mode));
+        case CONVERT_OPCODE(SHL):
+            BCPU_DBGI("shl", modeToString(instruction.addrmode));
 
-            dest_reg = registers[EXTRACT_REG(instruction)];
+            dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
-            if (instr_mode == IMMEDIATE)
-                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) << (instruction & 0x3F);
-            else if (instr_mode == REGISTER)
-                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) << *registers[EXTRACT_SRC_REG(instruction)];
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) << instruction.sources.src2;
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                result = *dest_reg = static_cast<uint32_t>( *dest_reg ) << *registers[instruction.sources.src2];
             else
                 /* TODO:  generate instruction fault */;
             break;
 
         default:
             BCPU_DBGI("undefined", 0);
-            fprintf(stderr, "Undefined instruction:  0x%08x\n", instruction);
+            fprintf(stderr, "Undefined instruction:  0x%08x\n", instruction.opcode);
             exit(1);
         }
 
         #if DEBUG
-        printf("instr = 0x%08x", instruction);
+        MemAddress* instructionCode = reinterpret_cast<MemAddress*>( &instruction );
+        printf("instr = 0x%08x", *instructionCode);
         if (str_opcode)
         {
             printf(" (%s", str_opcode);
