@@ -9,7 +9,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#if EMULATOR_PROFILE
+#if EMULATOR_BENCHMARK
 #  include <chrono>
 #endif
 
@@ -220,7 +220,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
     MemAddress  result = 0;     // value after  a calculation
     MemAddress* dest_reg;       // destination register
 
-    #if EMULATOR_PROFILE
+    #if EMULATOR_BENCHMARK
     typedef chrono::high_resolution_clock Clock;
     typedef std::chrono::microseconds microseconds;
 
@@ -235,7 +235,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         // Check for interrupts
         if (this->interruptsEnabled() && this->interrupts.any())
         {
-            #if EMULATOR_PROFILE
+            #if EMULATOR_BENCHMARK
             numInterrupts++;
             #endif
             for (size_t i = 0; i < this->interrupts.size(); i++)
@@ -260,7 +260,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         }
 
         Instruction instruction = getInstruction(memory, ip);
-        #if EMULATOR_PROFILE
+        #if EMULATOR_BENCHMARK
         numInstructions++;
         #endif
 
@@ -651,7 +651,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         #endif
     }
 
-    #if EMULATOR_PROFILE
+    #if EMULATOR_BENCHMARK
     Clock::time_point endtime = Clock::now();
     microseconds us = std::chrono::duration_cast<microseconds>(endtime - t0);
     double mhz = static_cast<double>( numInstructions ) / us.count();

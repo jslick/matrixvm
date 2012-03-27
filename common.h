@@ -13,8 +13,8 @@
 #  define DEBUG         0
 #endif
 
-#ifndef EMULATOR_PROFILE
-#  define EMULATOR_PROFILE 0
+#ifndef EMULATOR_BENCHMARK
+#  define EMULATOR_BENCHMARK 0
 #endif
 
 // Check validity of instructions

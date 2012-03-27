@@ -48,7 +48,7 @@ void CharOutputDevice::init(Motherboard& mb)
 void CharOutputDevice::write(MemAddress what, int port)
 {
     // TODO:  thread it
-    #if !EMULATOR_PROFILE
+    #if !EMULATOR_BENCHMARK
     printf("%s", reinterpret_cast<const char*>( &Device::getMemory(*mb)[this->mappingAddr+1] ));
     #endif
     // TODO:  interrupt
