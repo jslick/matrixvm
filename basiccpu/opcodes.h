@@ -43,7 +43,7 @@
 #define STATUS_OVERFLOW_MASK    (0b00001000 <<  0)
 
 /* Addressing modes */
-#define INS_ADDR    21
+#define INS_ADDR    20
 #define ABSOLUTE    ( 0 << INS_ADDR )
 #define RELATIVE    ( 1 << INS_ADDR )
 #define IMMEDIATE   ( 2 << INS_ADDR )

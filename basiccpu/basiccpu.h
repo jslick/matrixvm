@@ -42,8 +42,8 @@ public:
         #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
         unsigned opcode         :8;
         unsigned destreg        :4;
-        unsigned /* pad */      :1;
         unsigned addrmode       :3;
+        unsigned /* pad */      :1;
         union {
             unsigned operand    :16;
             struct {
