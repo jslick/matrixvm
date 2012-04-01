@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 project(matrixvm)
 
 set(CMAKE_CXX_FLAGS "-g3 -Wall --std=c++0x ${CMAKE_CXX_FLAGS}")
-find_library(BOOST_THREAD boost_thread REQUIRED)
+find_library(BOOST_THREAD NAMES "boost_thread" "boost_thread-mt" REQUIRED)
 include_directories(${PROJECT_SOURCE_DIR})
 
 include(CheckLibraryExists)
