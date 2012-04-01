@@ -33,7 +33,9 @@ void TimerDevice::init(Motherboard& mb)
 
 void TimerDevice::write(MemAddress what, int port)
 {
+    #if !EMULATOR_BENCHMARK
     printf("Set timer interval to %d microseconds\n", what);
+    #endif
     this->interval = what;
 }
 
@@ -68,7 +70,7 @@ void TimerDevice::runTimer()
         if (this->interval < TimerDevice::MIN_INTERVAL)
             this->interval = TimerDevice::MIN_INTERVAL;
         if (this->interval >= 1000000)
-            this->interval = 999999; // maximum value for usleep
+            this->interval = 1000000; // maximum value for usleep
 
         usleep(this->interval);
         if (this->interval)
