@@ -5,7 +5,7 @@
  * Matrix VM
  */
 
-#ifdef __linux
+#if __linux or __APPLE__
 #include "linuxdladapter.cpp"
 #else
 

@@ -8,7 +8,7 @@
 #ifndef DL_ADAPTER_H
 #define DL_ADAPTER_H
 
-#ifdef __linux
+#if __linux or __APPLE__
 #include "linuxdladapter.h"
 /**
  * @class DlAdapter
