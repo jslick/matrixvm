@@ -40,17 +40,21 @@ public:
      */
     struct Instruction {
         #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
-        union {
-            unsigned operand    :16;
-            struct {
-                unsigned src2 :8;
-                unsigned src1 :8;
-            } __attribute__((packed)) sources;
-        } __attribute__((packed));
+        unsigned opcode         :8;
         unsigned destreg        :4;
         unsigned /* pad */      :1;
         unsigned addrmode       :3;
-        unsigned opcode         :8;
+        union {
+            unsigned operand    :16;
+            struct {
+                unsigned src1 :8;
+                unsigned src2 :8;
+            } __attribute__((packed)) sources;
+        } __attribute__((packed));
+
+        inline uint16_t getOperand() const {
+            return ((operand << 8) & 0xFF00) | ((operand >> 8) & 0x00FF);
+        }
         #else
         // NOTE:  big endian not tested!
         unsigned opcode         :8;
@@ -64,6 +68,10 @@ public:
                 unsigned src2 :8;
             }  __attribute__((packed)) sources;
         } __attribute__((packed));
+
+        inline uint16_t getOperand() const {
+            return operand;
+        }
         #endif
     } __attribute__((packed));
 

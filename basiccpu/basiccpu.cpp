@@ -64,8 +64,8 @@ static inline void updateMemory16(
 static inline BasicCpu::Instruction getInstruction(vector<uint8_t>& memory, MemAddress& ip)
 {
     ip += 4;
-    MemAddress bytes = getMemory32(memory, ip - 4);
-    BasicCpu::Instruction* instruction = reinterpret_cast<BasicCpu::Instruction*>( &bytes );
+
+    BasicCpu::Instruction* instruction = reinterpret_cast<BasicCpu::Instruction*>( &memory[ip-4] );
     return *instruction;
 }
 
@@ -289,43 +289,43 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
 
         case CONVERT_OPCODE(JMP):
             BCPU_DBGI("jmp", "relative");
-            reljump(instruction.operand, ip);
+            reljump(instruction.getOperand(), ip);
             break;
 
         case CONVERT_OPCODE(JE):
             BCPU_DBGI("je", "relative");
             if (result == 0)
-                reljump(instruction.operand, ip);
+                reljump(instruction.getOperand(), ip);
             break;
 
         case CONVERT_OPCODE(JNE):
             BCPU_DBGI("jne", "relative");
             if (result != 0)
-                reljump(instruction.operand, ip);
+                reljump(instruction.getOperand(), ip);
             break;
 
         case CONVERT_OPCODE(JGE):
             BCPU_DBGI("jge", "relative");
             if (result >= 0)
-                reljump(instruction.operand, ip);
+                reljump(instruction.getOperand(), ip);
             break;
 
         case CONVERT_OPCODE(JG):
             BCPU_DBGI("jg", "relative");
             if (result > 0)
-                reljump(instruction.operand, ip);
+                reljump(instruction.getOperand(), ip);
             break;
 
         case CONVERT_OPCODE(JLE):
             BCPU_DBGI("jle", "relative");
             if (result <= 0)
-                reljump(instruction.operand, ip);
+                reljump(instruction.getOperand(), ip);
             break;
 
         case CONVERT_OPCODE(JL):
             BCPU_DBGI("jl", "relative");
             if (result < 0)
-                reljump(instruction.operand, ip);
+                reljump(instruction.getOperand(), ip);
             break;
 
         case CONVERT_OPCODE(CALL):
@@ -334,7 +334,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             push(memory, sp, lr);
             // save instruction pointer to link register
             lr = ip;
-            reljump(instruction.operand, ip);
+            reljump(instruction.getOperand(), ip);
             break;
 
         case CONVERT_OPCODE(RET):
@@ -407,7 +407,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         case CONVERT_OPCODE(STRB):
             BCPU_DBGI("strb", modeToString(instruction.addrmode));
             if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
-                memory[*registers[instruction.destreg]] = instruction.operand;
+                memory[*registers[instruction.destreg]] = instruction.getOperand();
             else if (instruction.addrmode == CONVERT_MODE(REGISTER))
                 memory[*registers[instruction.destreg]] = *registers[instruction.sources.src2];
             else
@@ -433,7 +433,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         case CONVERT_OPCODE(PUSHW):
             BCPU_DBGI("pushw", modeToString(instruction.addrmode));
             if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
-                push16(memory, sp, instruction.operand);
+                push16(memory, sp, instruction.getOperand());
             else if (instruction.addrmode == CONVERT_MODE(REGISTER))
                 push16(memory, sp, *registers[instruction.sources.src2]);
             else
@@ -444,14 +444,14 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
         case CONVERT_OPCODE(READ):
             BCPU_DBGI("read", modeToString(instruction.addrmode));
             if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
-                *registers[instruction.destreg] = ic ? ic->getPin(instruction.operand) : 0;
+                *registers[instruction.destreg] = ic ? ic->getPin(instruction.getOperand()) : 0;
             else
                 /* TODO: generate instruction fault */;
             break;
 
         case CONVERT_OPCODE(WRITE):
             BCPU_DBGI("write", "immediate");
-            Device::writeMb(mb, instruction.operand, getWord(memory, ip));
+            Device::writeMb(mb, instruction.getOperand(), getWord(memory, ip));
             break;
 
         case CONVERT_OPCODE(MEMCPY):
@@ -572,7 +572,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             dest_reg = registers[instruction.destreg];
             before = *dest_reg;
 
-            result = *dest_reg *= instruction.operand;
+            result = *dest_reg *= instruction.getOperand();
             break;
 
         case CONVERT_OPCODE(AND):
