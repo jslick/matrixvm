@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <arpa/inet.h>
 #if EMULATOR_BENCHMARK
 #  include <chrono>
 #endif
@@ -625,7 +626,7 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
 
         #if DEBUG
         MemAddress* instructionCode = reinterpret_cast<MemAddress*>( &instruction );
-        printf("instr = 0x%08x", *instructionCode);
+        printf("instr = 0x%08x", htonl(*instructionCode));
         if (str_opcode)
         {
             printf(" (%s", str_opcode);
