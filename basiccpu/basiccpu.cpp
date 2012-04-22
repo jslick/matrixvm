@@ -98,6 +98,11 @@ static inline void push16(vector<uint8_t>& memory, MemAddress& sp, uint16_t what
     updateMemory16(memory, sp -= 2, what);
 }
 
+static inline void push8(vector<uint8_t>& memory, MemAddress& sp, uint8_t what)
+{
+    memory[--sp] = what;
+}
+
 /**
  * Pops a 32-bit value from the stack and updates the stack pointer
  * @param[in,out]   memory
@@ -442,6 +447,17 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
                 push16(memory, sp, instruction.getOperand());
             else if (instruction.addrmode == CONVERT_MODE(REGISTER))
                 push16(memory, sp, *registers[instruction.sources.src2]);
+            else
+                /* TODO:  generate instruction fault */;
+
+            break;
+
+        case CONVERT_OPCODE(PUSHB):
+            BCPU_DBGI("pushb", modeToString(instruction.addrmode));
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                push8(memory, sp, instruction.getOperand());
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER))
+                push8(memory, sp, *registers[instruction.sources.src2]);
             else
                 /* TODO:  generate instruction fault */;
 
