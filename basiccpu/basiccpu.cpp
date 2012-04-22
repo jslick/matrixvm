@@ -330,12 +330,17 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             break;
 
         case CONVERT_OPCODE(CALL):
-            BCPU_DBGI("call", "relative");
+            BCPU_DBGI("call", modeToString(instruction.addrmode));
             // save current lr
             push(memory, sp, lr);
             // save instruction pointer to link register
             lr = ip;
-            reljump(instruction.getOperand(), ip);
+            if (instruction.addrmode == CONVERT_MODE(RELATIVE))
+                reljump(instruction.getOperand(), ip);
+            else if (instruction.addrmode == CONVERT_MODE(INDIRECT))
+                ip = *registers[instruction.destreg];
+            else
+                /* ERROR */;
             break;
 
         case CONVERT_OPCODE(RET):

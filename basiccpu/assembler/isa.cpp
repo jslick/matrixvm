@@ -272,11 +272,23 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
     case CALL:
     {
         validateNumArguments(1);
-        MemAddress destination = program.solveArgumentAddress(instr.args);
-        MemAddress diff = destination - instr.address;
-        if (diff > 0xFFFF || diff < -0xFFFF)
-            throw runtime_error("jmp out of range");
-        generated.push_back(instr.opcode | RELATIVE | static_cast<uint16_t>( diff ));
+
+        if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args ))
+        {
+            // NOTE: TODO:
+            // Indirect mode is only implemented for CALL in the emulator
+
+            MemAddress regBits = argToRegBits(*arg_reg);
+            generated.push_back(instr.opcode | INDIRECT | regBits);
+        }
+        else
+        {
+            MemAddress destination = program.solveArgumentAddress(instr.args);
+            MemAddress diff = destination - instr.address;
+            if (diff > 0xFFFF || diff < -0xFFFF)
+                throw runtime_error("jmp out of range");
+            generated.push_back(instr.opcode | RELATIVE | static_cast<uint16_t>( diff ));
+        }
         break;
     }
 
