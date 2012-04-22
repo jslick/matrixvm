@@ -4,3 +4,4 @@ assembler
 *.yacc.hpp
 *.yacc.cpp
 *.yacc.output
+bcpu.bin
