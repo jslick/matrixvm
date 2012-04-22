@@ -13,14 +13,7 @@ void NullDisplayManager::init(
     int                             width,
     int                             height
     )
-{
-    this->memory = &memory;
-    this->videoAddress = videoAddress;
-    this->ic = ic;
-
-    this->width  = width;
-    this->height = height;
-}
+{ }
 
 void NullDisplayManager::show()
 {

@@ -21,15 +21,6 @@ public:
 
     void destroy();
 
-private:
-
-    std::vector<uint8_t>*           memory;
-    MemAddress                      videoAddress;
-    machine::InterruptController*   ic;
-
-    int width;
-    int height;
-
 };
 
 #endif // NULLDISPLAYMANAGER_H
