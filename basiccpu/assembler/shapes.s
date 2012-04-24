@@ -1,3 +1,5 @@
+;;; Shape functions ;;;
+
 ; Shape structure
 ;   magic           : 4 bytes
 ;   xpos            : 4 bytes
@@ -75,9 +77,71 @@ draw_all_loop:
     jmp     draw_all_loop
 
 draw_all_ret:
+    write   DISPLAY_PORT, 1 ; flush display
     pop     r4
     pop     r6
     ret
+
+; r4 = left
+; r5 = top
+; r6 = length
+; r7 = color
+draw_horizontal:
+    push    r6
+    push    r4
+
+    ; give to clrset these values:
+    ; r1 = DISPLAY_DMA + 3 * (top * width + left)
+    ; r2 = length
+
+    ; Verify our y position is in bounds, if not do not draw anything
+    tst     r5
+    jl      hori_ret
+    cmp     r4, 639
+    jg      hori_ret
+
+    ; Now check the x position. Even if off screen, we may still have some part
+    ; of this line that can still be displayed
+    tst     r4
+    jge     right_check
+    add     r6, r4
+    tst     r6
+    jle     hori_ret
+    mov     r4, 0           ; We want to start drawing from 0 (left of screen)
+                            ; but the line we draw will be shorter now
+    jmp     hori_draw
+
+right_check:
+    cmp     r4, 639         ; Remember, 0 indexed
+    jge     hori_ret        ; We are out of bounds
+    ; We need to check the length
+    mov     r1, r4          ; We are in bounds
+    add     r1, r6          ; Find ending ypos
+    cmp     r1, 639
+    jge     shorten_hline   ; Oops, the end is out of bounds, need to shorten it by the amount larger than 639
+    jmp     hori_draw
+
+shorten_hline:
+    sub     r1, 639
+    sub     r6, r1
+
+hori_draw:
+    mov     r1, r5
+    mul     r1, 640
+    add     r1, r4
+    mul     r1, 3
+    add     r1, DISPLAY_DMA
+
+    mov     r2, r6
+
+    clrset  r7
+
+hori_ret:
+    pop     r4
+    pop     r6
+    ret
+
+;;; Main ;;;
 
 main:
     call    create_a_square
@@ -93,7 +157,7 @@ main_move:
 create_a_square:
     push    r4
 
-    push    draw_square ; draw callback
+    push    draw_square_wrapper ; draw callback
     push    0x000080    ; color = blue
     push    0           ; param2 = unused
     push    50          ; param1 = length
@@ -108,18 +172,64 @@ create_a_square:
     pop     r4
     ret
 
-; Draw a square
+; Called as a shape callback
 ; r4 = shape structure
-draw_square_msg:
-    db      "draw_square_msg" 0xa 0
-draw_square:
+draw_square_wrapper:
     push    r4
     push    r5
+    push    r6
+    push    r7
 
-    mov     r4, draw_square_msg
-    mov     r5, draw_square - draw_square_msg
-    call    print
+    ; In essence:  draw_square(shape->xpos, shape->pos, shape->param1, shape->color)
 
+    mov     r2, r4
+    ; r4 = shape->xpos
+    add     r2, 4
+    load    r4, r2
+    ; r5 = shape->ypos
+    add     r2, 4
+    load    r5, r2
+    ; r6 = shape->param1
+    add     r2, 6
+    load    r6, r2
+    ; r7 = shape->color
+    add     r2, 8
+    load    r7, r2
+
+    call    draw_square
+
+    pop     r7
+    pop     r6
     pop     r5
     pop     r4
+    ret
+
+; Draw a square
+; r4 = left
+; r5 = top
+; r6 = sidelength
+; r7 = color
+draw_square:
+    mov     r3, r6              ; Set counter to the sidelength
+    call    draw_rect
+
+    ret
+
+; r4 = left
+; r5 = top
+; r6 = xlength
+; r7 = color
+; r3 = ylength
+draw_rect:
+    push    r5
+rectloop:
+    push    r3
+    call    draw_horizontal
+    inc     r5
+    pop     r3
+    dec     r3
+    tst     r3
+    jne     rectloop
+
+    pop     r5
     ret
