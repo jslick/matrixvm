@@ -233,3 +233,112 @@ rectloop:
 
     pop     r5
     ret
+
+; Guest code versions of emulator instructions - for the purpose of
+; benchmarking the difference
+
+; Guest implementation of clrsetv
+;r4 Color to draw
+color_set_vert:
+    push    r1
+    push    r2
+    push    r3
+    push    r4
+    push    r5
+    push    r6
+    push    r7
+
+    mov     r7, r2
+    mul     r7, r3
+    mul     r7, 3
+    add     r7, r1
+
+color_set_vert_loop:
+    mov     r5, r4
+    and     r5, 0xFF0000 ;Red
+    shr     r5, 16
+    strb    r1, r5
+
+    mov     r5, r4
+    and     r5, 0x00FF00 ;Green
+    shr     r5, 8
+    push    r1
+    add     r1,1
+    strb    r1, r5
+    pop     r1
+
+    mov     r5, r4
+    and     r5, 0x0000FF ;Blue
+    push    r1
+    add     r1,2
+    strb    r1, r5
+    pop     r1
+
+    push    r7 ;Update i value
+    mov     r7, r2
+    mul     r7, 3
+    add     r1, r7
+    pop     r7
+
+    cmp     r1, r7
+    jl      color_set_vert_loop
+
+    pop     r7
+    pop     r6
+    pop     r5
+    pop     r4
+    pop     r3
+    pop     r2
+    pop     r1
+    ret
+
+; Guest implementation of clrset
+; r4 Color to draw
+color_set_horz:
+    push    r1
+    push    r2
+    push    r3
+    push    r4
+    push    r5
+    push    r6
+    push    r7
+
+    mov     r7, r2
+    mul     r7, 3
+    add     r7, r1
+
+color_set_horz_loop:
+    mov     r5, r4
+    and     r5, 0xFF0000 ;Red
+    shr     r5, 16
+    strb    r1, r5
+
+    mov     r5, r4
+    and     r5, 0x00FF00 ;Green
+    shr     r5, 8
+    push    r1
+    add     r1,1
+    strb    r1, r5
+    pop     r1
+
+    mov     r5, r4
+    and     r5, 0x0000FF ;Blue
+    push    r1
+    add     r1,2
+    strb    r1, r5
+    pop     r1
+
+    ;Update i value
+    add     r1, 3
+
+    cmp     r1, r7
+    jl      color_set_horz_loop
+
+    pop     r7
+    pop     r6
+    pop     r5
+    pop     r4
+    pop     r3
+    pop     r2
+    pop     r1
+    ret
