@@ -125,6 +125,10 @@ private:
 
     std::bitset<NUM_INTERRUPT_LINES> interrupts;
 
+    #if EMULATOR_BENCHMARK
+    unsigned long long numOperations;
+    #endif
+
 };
 
 }   // namespace machine

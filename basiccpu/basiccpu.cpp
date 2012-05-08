@@ -233,6 +233,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
     Clock::time_point t0 = Clock::now();
     unsigned long long numInstructions = 0;
     unsigned long long numInterrupts   = 0;
+    numOperations = 0;
+
+    #define COUNT_OPERATION(num_ops) ++numOperations
+    #else
+    #define COUNT_OPERATION(num_ops) /* hello */
     #endif
 
     bool halt = false;
@@ -484,6 +489,13 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
                 MemAddress* lenReg  = registers[instruction.sources.src2];
                 for (int i = 0; i < *lenReg; i++)
                     memory[*destReg + i] = memory[*srcReg + i];
+                COUNT_OPERATION(
+                    *lenReg + 1 /* comparisons */
+                  + *lenReg     /* i++ */
+                  + *lenReg     /* memory loads */
+                  + *lenReg     /* memory stores */
+                  - 1           /* compensate for COUNT_OPERATION after switch-case */
+                    );
             }
             break;
 
@@ -495,6 +507,12 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
                 MemAddress* lenReg  = registers[instruction.sources.src2];
                 for (int i = 0; i < *lenReg; i++)
                     memory[*destReg + i] = *srcReg;
+                COUNT_OPERATION(
+                    *lenReg + 1 /* comparisons */
+                  + *lenReg     /* i++ */
+                  + *lenReg     /* memory stores */
+                  - 1           /* compensate for COUNT_OPERATION after switch-case */
+                    );
             }
             break;
 
@@ -645,6 +663,8 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             exit(1);
         }
 
+        COUNT_OPERATION(1);
+
         #if DEBUG
         MemAddress* instructionCode = reinterpret_cast<MemAddress*>( &instruction );
         printf("instr = 0x%08x", htonl(*instructionCode));
@@ -677,10 +697,13 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
     Clock::time_point endtime = Clock::now();
     microseconds us = std::chrono::duration_cast<microseconds>(endtime - t0);
     double mhz = static_cast<double>( numInstructions ) / us.count();
+    double opspsec = static_cast<double>( numOperations ) / us.count();
 
     printf("Number of instructions executed:  %12lld\n", numInstructions);
-    printf("Number of microseconds:           %12ld\n", us.count());
+    printf("Number of operations   executed:  %12lld\n", numOperations);
+    printf("Number of microseconds:           %12ld\n",  us.count());
     printf("Calculated MHz:                   %12.3f\n", mhz);
+    printf("Calculate ops/s:                  %12.3f\n", opspsec);
     printf("Number of interrupts:             %12lld\n", numInterrupts);
     #endif
 }
@@ -751,6 +774,8 @@ void BasicCpu::colorset(std::vector<uint8_t>& memory, MemAddress what)
         memory[i+0] = red;
         memory[i+1] = green;
         memory[i+2] = blue;
+
+        COUNT_OPERATION(3 + 2); // tis actually conservative
     }
 }
 
@@ -769,5 +794,7 @@ void BasicCpu::colorsetVertical(std::vector<uint8_t>& memory, MemAddress what)
         memory[i+0] = red;
         memory[i+1] = green;
         memory[i+2] = blue;
+
+        COUNT_OPERATION(3 + 2); // tis actually conservative
     }
 }
