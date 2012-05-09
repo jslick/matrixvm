@@ -268,6 +268,11 @@ char        \'\\?[^']\'
     return CLRSETV;
 }
 
+"drwsq" {
+    DEBUGF("DRWSQ\n");
+    return DRWSQ;
+}
+
 "read" {
     DEBUGF("READ\n");
     return READ;

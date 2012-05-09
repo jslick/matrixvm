@@ -107,6 +107,8 @@ protected:
 
     void colorsetVertical(std::vector<uint8_t>& memory, MemAddress what);
 
+    void drawSquare(std::vector<uint8_t>& memory, MemAddress what);
+
 private:
 
     // registers

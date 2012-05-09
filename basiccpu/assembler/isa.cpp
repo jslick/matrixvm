@@ -148,6 +148,7 @@ int Isa::calcInstructionSize(Instruction& instr)
         return arg1IsRegister() ? 4 : 8;
     case CLRSET:
     case CLRSETV:
+    case DRWSQ:
         return arg1IsRegister() ? 4 : 8;
 
     case ADD:
@@ -422,6 +423,7 @@ vector<MemAddress> Isa::generateInstructions(const Program& program, Instruction
 
     case CLRSET:
     case CLRSETV:
+    case DRWSQ:
     {
         validateNumArguments(1);
         if (RegisterArgument* arg_reg = dynamic_cast<RegisterArgument*>( instr.args ))
@@ -611,6 +613,7 @@ void Isa::loadOpcodeTable()
     MAP_OPCODE(MEMSET);
     MAP_OPCODE(CLRSET);
     MAP_OPCODE(CLRSETV);
+    MAP_OPCODE(DRWSQ);
 
     // I/O
     MAP_OPCODE(READ);
@@ -684,6 +687,7 @@ void Isa::loadInstructionSizeTable()
     this->instructionSizeTable[MEMSET]  = 4;
     this->instructionSizeTable[CLRSET]  = 0;
     this->instructionSizeTable[CLRSETV] = 0;
+    this->instructionSizeTable[DRWSQ]   = 0;
 
     // I/O
     this->instructionSizeTable[READ]  = 4;

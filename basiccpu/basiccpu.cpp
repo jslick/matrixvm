@@ -536,6 +536,17 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
             BCPU_DBGI("clrsetv", modeToString(instruction.addrmode));
             break;
 
+        case CONVERT_OPCODE(DRWSQ):
+            if (instruction.addrmode == CONVERT_MODE(IMMEDIATE))
+                this->drawSquare(memory, getWord(memory, ip));
+            else if (instruction.addrmode == CONVERT_MODE(REGISTER)) // this mode is untested
+                this->drawSquare(memory, *registers[instruction.sources.src2]);
+            else
+                /* TODO:  generate instruction fault */;
+            BCPU_DBGI("drwsq", modeToString(instruction.addrmode));
+            break;
+
+
         case CONVERT_OPCODE(HALT):
             BCPU_DBGI("halt", 0);
             halt = true;
@@ -796,5 +807,31 @@ void BasicCpu::colorsetVertical(std::vector<uint8_t>& memory, MemAddress what)
         memory[i+2] = blue;
 
         COUNT_OPERATION(3 + 2); // tis actually conservative
+    }
+}
+
+void BasicCpu::drawSquare(std::vector<uint8_t>& memory, MemAddress what)
+{
+    uint8_t red   = (what & 0xFF0000) >> (4 * 4);
+    uint8_t green = (what & 0x00FF00) >> (2 * 4);
+    uint8_t blue  = (what & 0x0000FF) >> 0;
+
+    // h = DISPLAY_DMA + 3 * (top * width + left)
+    // r1 is the start of video memory
+    // r2 is the top value
+    // r3 is the left value
+    // r4 is the square size
+    // r5 is the screen width
+
+    for (MemAddress count = 0; count < r4; count++)
+    {
+        MemAddress h = r1 + 3 * ((r2 + count) * r5 + r3);
+
+        for (MemAddress i = h; i < h + r4 * 3; i += 3)
+        {
+            memory[i+0] = red;
+            memory[i+1] = green;
+            memory[i+2] = blue;
+        }
     }
 }

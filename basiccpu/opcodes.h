@@ -98,6 +98,7 @@
 #define MEMSET  ( 0x4a << INS_OPCODE )  // NOTE:  not yet implemented
 #define CLRSET  ( 0x4b << INS_OPCODE )
 #define CLRSETV ( 0x4c << INS_OPCODE )
+#define DRWSQ   ( 0x4d << INS_OPCODE )
 
 // I/O
 #define READ    ( 0x50 << INS_OPCODE )
