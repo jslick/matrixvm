@@ -554,7 +554,9 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
 
         case CONVERT_OPCODE(IDLE):
             BCPU_DBGI("idle", 0);
+            #if !EMULATOR_BENCHMARK
             usleep(dl);
+            #endif
             break;
 
         case CONVERT_OPCODE(ADD):
