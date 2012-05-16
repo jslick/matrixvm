@@ -778,6 +778,9 @@ void BasicCpu::updateStatus(MemAddress before, MemAddress result)
 
 void BasicCpu::colorset(std::vector<uint8_t>& memory, MemAddress what)
 {
+    // r1 = start address
+    // r2 = length
+
     uint8_t red   = (what & 0xFF0000) >> (4 * 4);
     uint8_t green = (what & 0x00FF00) >> (2 * 4);
     uint8_t blue  = (what & 0x0000FF) >> 0;
@@ -818,22 +821,18 @@ void BasicCpu::drawSquare(std::vector<uint8_t>& memory, MemAddress what)
     uint8_t green = (what & 0x00FF00) >> (2 * 4);
     uint8_t blue  = (what & 0x0000FF) >> 0;
 
-    // h = DISPLAY_DMA + 3 * (top * width + left)
-    // r1 is the start of video memory
-    // r2 is the top value
-    // r3 is the left value
-    // r4 is the square size
-    // r5 is the screen width
-
-    for (MemAddress count = 0; count < r4; count++)
+    // r1 = start address
+    // r2 = skip interval
+    // r3 = length
+    for (MemAddress i = r1; i < r1 + r2 * r3 * 3; i += r2 * 3)
     {
-        MemAddress h = r1 + 3 * ((r2 + count) * r5 + r3);
-
-        for (MemAddress i = h; i < h + r4 * 3; i += 3)
+        for (MemAddress j = i; j < i + r3 * 3; j += 3)
         {
-            memory[i+0] = red;
-            memory[i+1] = green;
-            memory[i+2] = blue;
+            memory[j+0] = red;
+            memory[j+1] = green;
+            memory[j+2] = blue;
+
+            COUNT_OPERATION(3 + 2); // tis actually conservative
         }
     }
 }
