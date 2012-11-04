@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 2.6)
 project(matrixvm)
 
 set(CMAKE_CXX_FLAGS "-g3 -Wall --std=c++0x ${CMAKE_CXX_FLAGS}")
+find_library(BOOST_SYSTEM "boost_system" REQUIRED)
 find_library(BOOST_THREAD NAMES "boost_thread" "boost_thread-mt" REQUIRED)
 include_directories(${PROJECT_SOURCE_DIR})
 
@@ -31,7 +32,7 @@ add_executable(matrixvm
         machine/dladapter.cpp
         machine/motherboard.cpp
         )
-target_link_libraries(matrixvm ${BOOST_THREAD} ${EXTRA_LIBS})
+target_link_libraries(matrixvm ${BOOST_SYSTEM} ${BOOST_THREAD} ${EXTRA_LIBS})
 
 add_subdirectory(basiccpu)
 add_subdirectory(dev)
