@@ -204,11 +204,11 @@ void BasicCpu::start(Motherboard& mb, MemAddress addr)
     registers[5]  = &r5;
     registers[6]  = &r6;
     registers[7]  = &r7;
-    registers[SP >> INS_REG] = &sp;
-    registers[LR >> INS_REG] = &lr;
-    registers[IP >> INS_REG] = &ip;
-    registers[DL >> INS_REG] = &dl;
-    registers[ST >> INS_REG] = &st;
+    registers[REG_SP >> INS_REG] = &sp;
+    registers[REG_LR >> INS_REG] = &lr;
+    registers[REG_IP >> INS_REG] = &ip;
+    registers[REG_DL >> INS_REG] = &dl;
+    registers[REG_ST >> INS_REG] = &st;
 
     #if DEBUG
     const char* str_opcode  = 0;

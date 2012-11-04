@@ -41,17 +41,17 @@ static inline MemAddress fourCharsToAddress(const vector<uint8_t>& value)
 
 static inline MemAddress regStringToAddress(const string& regStr)
 {
-    return regStr == "r1" ? R1 :
-           regStr == "r2" ? R2 :
-           regStr == "r3" ? R3 :
-           regStr == "r4" ? R4 :
-           regStr == "r5" ? R5 :
-           regStr == "r6" ? R6 :
-           regStr == "r7" ? R7 :
-           regStr == "sp" ? SP :
-           regStr == "lr" ? LR :
-           regStr == "dl" ? DL :
-           regStr == "st" ? ST :
+    return regStr == "r1" ? REG_R1 :
+           regStr == "r2" ? REG_R2 :
+           regStr == "r3" ? REG_R3 :
+           regStr == "r4" ? REG_R4 :
+           regStr == "r5" ? REG_R5 :
+           regStr == "r6" ? REG_R6 :
+           regStr == "r7" ? REG_R7 :
+           regStr == "sp" ? REG_SP :
+           regStr == "lr" ? REG_LR :
+           regStr == "dl" ? REG_DL :
+           regStr == "st" ? REG_ST :
            0;
 }
 
